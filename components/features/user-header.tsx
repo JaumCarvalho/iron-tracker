@@ -51,7 +51,7 @@ export function UserHeader({ selectedDate, onSelectDate }: UserHeaderProps) {
                 alt="User"
                 className="h-full w-full overflow-hidden rounded-full border-2 border-background bg-background">
                 <AvatarImage
-                  source={{ uri: 'https://github.com/shadcn.png' }}
+                  source={{ uri: user.avatarUri || 'https://github.com/shadcn.png' }}
                   className="h-full w-full rounded-full"
                   resizeMode="cover"
                 />
