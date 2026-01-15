@@ -33,4 +33,5 @@ export type UserProfile = {
   lastActivityDate: string | null;
   level: number;
   totalXp: number;
+  avatarUri?: string;
 };

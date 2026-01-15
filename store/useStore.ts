@@ -18,6 +18,7 @@ interface AppState {
   clearProfileOnly: () => void;
   devLogs: string[];
   addDevLog: (msg: string) => void;
+  updateUser: (data: Partial<UserProfile>) => void;
 }
 
 export const useStore = create<AppState>()(
@@ -28,6 +29,11 @@ export const useStore = create<AppState>()(
       dietLog: {},
       restDays: [],
       devLogs: [],
+      updateUser: (data) => {
+        set((state) => ({
+          user: { ...state.user, ...data },
+        }));
+      },
 
       addDevLog: (msg: string) => {
         const time = dayjs().format('HH:mm:ss');
