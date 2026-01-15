@@ -12,9 +12,12 @@ interface AppState {
   resetData: () => void;
   checkStreak: () => void;
   seedData: (daysToSimulate: number) => void;
-
   restDays: string[];
   toggleRestDay: (date: string) => void;
+  clearHistoryOnly: () => void;
+  clearProfileOnly: () => void;
+  devLogs: string[];
+  addDevLog: (msg: string) => void;
 }
 
 export const useStore = create<AppState>()(
@@ -23,26 +26,28 @@ export const useStore = create<AppState>()(
       user: { name: 'Giga Chad', streak: 0, lastActivityDate: null, level: 1, totalXp: 0 },
       history: [],
       dietLog: {},
-
       restDays: [],
+      devLogs: [],
 
-      toggleRestDay: (dateIso: string) => {
-        const dateStr = dayjs(dateIso).format('YYYY-MM-DD');
-
+      addDevLog: (msg: string) => {
+        const time = dayjs().format('HH:mm:ss');
         set((state) => {
-          const exists = state.restDays.includes(dateStr);
-          let newRestDays;
-
-          if (exists) {
-            newRestDays = state.restDays.filter((d) => d !== dateStr);
-          } else {
-            newRestDays = [...state.restDays, dateStr];
-          }
-
-          return { restDays: newRestDays };
+          const currentLogs = state.devLogs || [];
+          const newLog = `[${time}] ${msg}`;
+          return { devLogs: [newLog, ...currentLogs].slice(0, 50) };
         });
+      },
 
-        get().checkStreak();
+      clearHistoryOnly: () => {
+        set({ history: [] });
+        get().addDevLog('Histórico limpo com sucesso.');
+      },
+
+      clearProfileOnly: () => {
+        set((state) => ({
+          user: { ...state.user, level: 1, currentXp: 0, totalXp: 0, streak: 0 },
+        }));
+        get().addDevLog('Perfil/Stats resetados.');
       },
 
       resetData: () => {
@@ -51,13 +56,37 @@ export const useStore = create<AppState>()(
           history: [],
           restDays: [],
           dietLog: {},
+          devLogs: [],
         });
+        get().addDevLog('Factory Reset executado.');
+      },
+
+      toggleRestDay: (dateIso: string) => {
+        const dateStr = dayjs(dateIso).format('YYYY-MM-DD');
+
+        set((state) => {
+          const currentRestDays = state.restDays || [];
+          const exists = currentRestDays.includes(dateStr);
+          let newRestDays;
+
+          if (exists) {
+            newRestDays = currentRestDays.filter((d) => d !== dateStr);
+          } else {
+            newRestDays = [...currentRestDays, dateStr];
+          }
+
+          return { restDays: newRestDays };
+        });
+
+        get().checkStreak();
+        get().addDevLog(`Rest Day alterado: ${dateStr}`);
       },
 
       addWorkout: (session) => {
         set((state) => {
           const workoutDateStr = dayjs(session.date).format('YYYY-MM-DD');
-          const newRestDays = state.restDays.filter((d) => d !== workoutDateStr);
+          const currentRestDays = state.restDays || [];
+          const newRestDays = currentRestDays.filter((d) => d !== workoutDateStr);
 
           const newXp = state.user.totalXp + session.xpEarned;
           const newLevel = Math.floor(newXp / 1000) + 1;
@@ -74,13 +103,14 @@ export const useStore = create<AppState>()(
           };
         });
         get().checkStreak();
+        get().addDevLog('Treino registrado.');
       },
 
       checkStreak: () => {
         const { history, restDays } = get();
 
         const workoutMap = new Set(history.map((h) => dayjs(h.date).format('YYYY-MM-DD')));
-        const restMap = new Set(restDays);
+        const restMap = new Set(restDays || []);
 
         let streak = 0;
         let checkDate = dayjs();
@@ -248,6 +278,7 @@ export const useStore = create<AppState>()(
         });
 
         get().checkStreak();
+        get().addDevLog(`Seed de ${daysToSimulate} dias aplicado.`);
       },
     }),
     {
