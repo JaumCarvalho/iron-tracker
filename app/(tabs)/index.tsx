@@ -13,7 +13,6 @@ import { Card } from '@/components/ui/card';
 import { MuscleDistribution } from '@/components/features/muscle-distribuition';
 import { CardioAnalysis } from '@/components/features/cardio-analysis';
 import { UserHeader } from '@/components/features/user-header';
-// Removido: import { WeekCalendar } ...
 import { WorkoutHistoryItem } from '@/components/features/workout-history-item';
 
 import {
@@ -26,6 +25,7 @@ import {
   Coffee,
 } from 'lucide-react-native';
 import { SIMULATION_OPTIONS, STREAK_TIERS } from '@/lib/constants';
+import { DevFloatingMenu } from '@/components/features/dev-floating-menu';
 
 dayjs.locale('pt-br');
 
@@ -73,127 +73,110 @@ export default function Dashboard() {
   };
 
   return (
-    <ScrollView
-      className="flex-1 bg-background p-6 pt-12"
-      contentContainerStyle={{ paddingBottom: 100 }}
-      showsVerticalScrollIndicator={false}>
-      <UserHeader selectedDate={selectedDate} onSelectDate={setSelectedDate} />
+    <View className="flex-1 bg-background">
+      <ScrollView
+        className="flex-1 bg-background p-6 pt-12"
+        contentContainerStyle={{ paddingBottom: 100 }}
+        showsVerticalScrollIndicator={false}>
+        <UserHeader selectedDate={selectedDate} onSelectDate={setSelectedDate} />
 
-      <View className="mb-8">
-        <View className="mb-3 flex-row items-center justify-between">
-          <Text className="text-lg font-bold text-foreground">
-            {selectedDate.isSame(dayjs(), 'day')
-              ? 'Hoje'
-              : selectedDate.format('dddd, DD [de] MMMM')}
-          </Text>
+        <View className="mb-8">
+          <View className="mb-3 flex-row items-center justify-between">
+            <Text className="text-lg font-bold text-foreground">
+              {selectedDate.isSame(dayjs(), 'day')
+                ? 'Hoje'
+                : selectedDate.format('dddd, DD [de] MMMM')}
+            </Text>
 
-          <TouchableOpacity
-            onPress={() => router.push('/workout/new')}
-            className="flex-row items-center gap-1 rounded-full bg-primary/10 px-3 py-1.5">
-            <Plus size={16} className="text-primary" />
-            <Text className="text-xs font-bold text-primary">Novo Treino</Text>
-          </TouchableOpacity>
-        </View>
-
-        {filteredWorkouts.length > 0 ? (
-          <View className="gap-3">
-            {filteredWorkouts.map((item) => (
-              <WorkoutHistoryItem key={item.id} workout={item} />
-            ))}
-            {isRestDay && (
-              <Text className="mt-2 text-center text-xs text-muted-foreground">
-                * Treino realizado anula o descanso.
-              </Text>
-            )}
-          </View>
-        ) : (
-          <Card
-            className={`items-center justify-center gap-3 border-2 border-dashed p-6 ${isRestDay ? 'border-blue-500/30 bg-blue-500/5' : 'border-muted bg-muted/10'}`}>
-            {isRestDay ? (
-              <>
-                <View className="mb-1 h-12 w-12 items-center justify-center rounded-full bg-blue-500/20">
-                  <Coffee size={24} color="#3b82f6" />
-                </View>
-                <Text className="text-lg font-bold text-blue-500">Dia de Descanso</Text>
-                <Text className="text-center text-xs text-muted-foreground">
-                  Ofensiva Congelada.
-                </Text>
-                <Button variant="ghost" className="h-8" onPress={handleToggleRest}>
-                  <Text className="text-xs text-muted-foreground">Cancelar</Text>
-                </Button>
-              </>
-            ) : (
-              <>
-                <Text className="text-center text-sm font-medium text-foreground">
-                  Nenhum treino hoje.
-                </Text>
-                <Button
-                  variant="outline"
-                  className="h-10 w-full flex-row gap-2 border-primary/20 bg-background"
-                  onPress={handleToggleRest}>
-                  <Coffee size={16} className="text-primary" />
-                  <Text className="text-xs font-bold text-primary">Marcar Descanso</Text>
-                </Button>
-              </>
-            )}
-          </Card>
-        )}
-      </View>
-
-      <Text className="mb-4 text-lg font-bold text-foreground">Visão Geral</Text>
-
-      <View className="mb-6 flex-row flex-wrap gap-3">
-        <StatsCard
-          icon={Dumbbell}
-          hexColor={tierColor}
-          label="Treinos"
-          value={history.length.toString()}
-        />
-        <StatsCard
-          icon={Activity}
-          hexColor={tierColor}
-          label="Volume Total"
-          value={totalSets.toString() + ' séries'}
-        />
-        <StatsCard
-          icon={CalendarDays}
-          hexColor={tierColor}
-          label="Último Treino"
-          value={history.length > 0 ? dayjs(history[0].date).format('DD/MM') : '--/--'}
-        />
-        <StatsCard
-          icon={TrendingUp}
-          hexColor={tierColor}
-          label="XP Total"
-          value={user.totalXp.toString()}
-        />
-      </View>
-
-      <View className="mb-8 gap-6">
-        <MuscleDistribution />
-        <CardioAnalysis />
-      </View>
-
-      <View className="mb-10 mt-4 rounded-xl border border-dashed border-border bg-muted/20 p-4">
-        <View className="mb-4 flex-row items-center justify-center gap-2">
-          <Database size={14} className="text-muted-foreground" />
-          <Text className="text-xs font-bold uppercase text-muted-foreground">Simulador (Dev)</Text>
-        </View>
-        <View className="mb-4 flex-row flex-wrap gap-2">
-          {SIMULATION_OPTIONS.map((opt) => (
             <TouchableOpacity
-              key={opt.days}
-              onPress={() => quickSeed(opt.days)}
-              className={`w-[48%] flex-row items-center justify-center rounded-lg border p-3 ${opt.bg} ${opt.border}`}>
-              <Text className={`text-xs font-bold ${opt.color}`}>{opt.label}</Text>
+              onPress={() => router.push('/workout/new')}
+              className="flex-row items-center gap-1 rounded-full bg-primary/10 px-3 py-1.5">
+              <Plus size={16} className="text-primary" />
+              <Text className="text-xs font-bold text-primary">Novo Treino</Text>
             </TouchableOpacity>
-          ))}
+          </View>
+
+          {filteredWorkouts.length > 0 ? (
+            <View className="gap-3">
+              {filteredWorkouts.map((item) => (
+                <WorkoutHistoryItem key={item.id} workout={item} />
+              ))}
+              {isRestDay && (
+                <Text className="mt-2 text-center text-xs text-muted-foreground">
+                  * Treino realizado anula o descanso.
+                </Text>
+              )}
+            </View>
+          ) : (
+            <Card
+              className={`items-center justify-center gap-3 border-2 border-dashed p-6 ${isRestDay ? 'border-blue-500/30 bg-blue-500/5' : 'border-muted bg-muted/10'}`}>
+              {isRestDay ? (
+                <>
+                  <View className="mb-1 h-12 w-12 items-center justify-center rounded-full bg-blue-500/20">
+                    <Coffee size={24} color="#3b82f6" />
+                  </View>
+                  <Text className="text-lg font-bold text-blue-500">Dia de Descanso</Text>
+                  <Text className="text-center text-xs text-muted-foreground">
+                    Ofensiva Congelada.
+                  </Text>
+                  <Button variant="ghost" className="h-8" onPress={handleToggleRest}>
+                    <Text className="text-xs text-muted-foreground">Cancelar</Text>
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Text className="text-center text-sm font-medium text-foreground">
+                    Nenhum treino hoje.
+                  </Text>
+                  <Button
+                    variant="outline"
+                    className="h-10 w-full flex-row gap-2 border-primary/20 bg-background"
+                    onPress={handleToggleRest}>
+                    <Coffee size={16} className="text-primary" />
+                    <Text className="text-xs font-bold text-primary">Marcar Descanso</Text>
+                  </Button>
+                </>
+              )}
+            </Card>
+          )}
         </View>
-        <Button variant="destructive" className="h-10 w-full" onPress={handleReset}>
-          <Text>Reset</Text>
-        </Button>
-      </View>
-    </ScrollView>
+
+        <Text className="mb-4 text-lg font-bold text-foreground">Visão Geral</Text>
+
+        <View className="mb-6 flex-row flex-wrap gap-3">
+          <StatsCard
+            icon={Dumbbell}
+            hexColor={tierColor}
+            label="Treinos"
+            value={history.length.toString()}
+          />
+          <StatsCard
+            icon={Activity}
+            hexColor={tierColor}
+            label="Volume Total"
+            value={totalSets.toString() + ' séries'}
+          />
+          <StatsCard
+            icon={CalendarDays}
+            hexColor={tierColor}
+            label="Último Treino"
+            value={history.length > 0 ? dayjs(history[0].date).format('DD/MM') : '--/--'}
+          />
+          <StatsCard
+            icon={TrendingUp}
+            hexColor={tierColor}
+            label="XP Total"
+            value={user.totalXp.toString()}
+          />
+        </View>
+
+        <View className="mb-8 gap-6">
+          <MuscleDistribution />
+          <CardioAnalysis />
+        </View>
+      </ScrollView>
+      <DevFloatingMenu />
+    </View>
   );
 }
 
