@@ -1,232 +1,226 @@
-import React, { useMemo } from 'react';
-import { View, ScrollView, TouchableOpacity } from 'react-native';
-import { router } from 'expo-router';
+import React, { useState } from 'react';
+import { View, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { router, Stack } from 'expo-router';
+import * as Clipboard from 'expo-clipboard';
+
 import { useStore } from '@/store/useStore';
 import { Text } from '@/components/ui/text';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useColorScheme } from 'nativewind';
+import { ThemeToggle } from '@/components/features/theme-toggle';
+
 import {
-  ChevronLeft,
+  ArrowLeft,
+  Save,
+  Copy,
+  Share2,
   Trophy,
-  Dumbbell,
-  Clock,
-  Calendar,
-  Lock,
-  Crown,
-  Star,
-  Zap,
   Flame,
+  Dumbbell,
+  ShieldCheck,
+  Coffee,
+  Camera,
 } from 'lucide-react-native';
-
-const STREAK_TIERS = [
-  {
-    days: 1825,
-    label: 'TITÃ',
-    color: '#10b981',
-    icon: Crown,
-    desc: '5 Anos de disciplina inabalável.',
-  },
-  { days: 1095, label: 'IMORTAL', color: '#ec4899', icon: Crown, desc: '3 Anos. Uma lenda viva.' },
-  { days: 730, label: 'MITO', color: '#06b6d4', icon: Star, desc: '2 Anos de constância.' },
-  {
-    days: 365,
-    label: 'LENDÁRIO',
-    color: '#fbbf24',
-    icon: Trophy,
-    desc: '1 Ano completo. A elite.',
-  },
-  { days: 180, label: 'SUPERNOVA', color: '#3b82f6', icon: Zap, desc: '6 Meses. Brilhando forte.' },
-  {
-    days: 90,
-    label: 'INFERNAL',
-    color: '#8b5cf6',
-    icon: Flame,
-    desc: '3 Meses. O hábito está formado.',
-  },
-  { days: 30, label: 'INCÊNDIO', color: '#ef4444', icon: Flame, desc: '1 Mês. O fogo começou.' },
-  {
-    days: 7,
-    label: 'EM CHAMAS',
-    color: '#f97316',
-    icon: Flame,
-    desc: '1 Semana. O início da jornada.',
-  },
-  { days: 0, label: 'FAGULHA', color: '#a1a1aa', icon: Flame, desc: 'O primeiro passo.' },
-];
-
+import * as ImagePicker from 'expo-image-picker';
 export default function ProfileScreen() {
-  const { user, history } = useStore();
-  const { colorScheme } = useColorScheme();
+  const { user, updateUser, history, restDays } = useStore();
 
-  const isDark = colorScheme === 'dark';
-  const iconColor = isDark ? '#ffffff' : '#09090b';
-  const mutedIconColor = isDark ? '#a1a1aa' : '#71717a';
-  const stats = useMemo(() => {
-    let totalVolume = 0;
-    let totalSeconds = 0;
+  const [name, setName] = useState(user.name);
+  const [isEditing, setIsEditing] = useState(false);
 
-    history.forEach((workout) => {
-      totalSeconds += workout.durationSeconds;
-      workout.exercises.forEach((ex) => {
-        ex.sets.forEach((s) => {
-          totalVolume += (Number(s.weight) || 0) * (Number(s.reps) || 0);
-        });
-      });
+  const totalWorkouts = history.length;
+  const totalRestDays = restDays.length;
+
+  const handleSave = () => {
+    if (name.trim() === '') {
+      Alert.alert('Erro', 'O nome não pode ficar vazio.');
+      return;
+    }
+    updateUser({ name });
+    setIsEditing(false);
+  };
+
+  const handleExportData = async () => {
+    const data = JSON.stringify({ user, history, restDays }, null, 2);
+    await Clipboard.setStringAsync(data);
+    Alert.alert('Copiado!', 'Seus dados foram copiados para a área de transferência.');
+  };
+  const handlePickImage = async () => {
+    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+    if (permissionResult.granted === false) {
+      Alert.alert('Permissão necessária', 'Precisamos de acesso à galeria para trocar sua foto.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.5,
     });
 
-    const hours = Math.floor(totalSeconds / 3600);
-    const tonnage =
-      totalVolume >= 1000 ? `${(totalVolume / 1000).toFixed(1)} Ton` : `${totalVolume} kg`;
-
-    return { hours, tonnage, workouts: history.length };
-  }, [history]);
-
-  const currentTier = useMemo(() => {
-    return STREAK_TIERS.find((t) => user.streak >= t.days) || STREAK_TIERS[STREAK_TIERS.length - 1];
-  }, [user.streak]);
-
-  const xpCurrentLevel = user.totalXp % 1000;
-  const xpPercentage = (xpCurrentLevel / 1000) * 100;
+    if (!result.canceled) {
+      updateUser({ avatarUri: result.assets[0].uri });
+    }
+  };
 
   return (
-    <View className="flex-1 bg-background">
-      <View className="z-10 flex-row items-center justify-between px-4 pb-2 pt-12">
-        <TouchableOpacity onPress={() => router.back()} className="rounded-full bg-muted/50 p-2">
-          <ChevronLeft size={24} color={iconColor} />
-        </TouchableOpacity>
-        <Text className="text-lg font-bold text-foreground">Perfil</Text>
-        <View className="w-10" />
-      </View>
+    <SafeAreaView className="flex-1 bg-background">
+      <Stack.Screen options={{ headerShown: false }} />
 
-      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 50 }}>
-        <View className="mb-8 mt-4 items-center">
-          <View
-            className="mb-4 h-28 w-28 items-center justify-center rounded-full p-[3px]"
-            style={{
-              backgroundColor: currentTier.color,
-              shadowColor: currentTier.color,
-              shadowOffset: { width: 0, height: 0 },
-              shadowOpacity: 0.8,
-              shadowRadius: 15,
-              elevation: 10,
-            }}>
-            <Avatar alt="User" className="h-full w-full rounded-full border-4 border-background">
-              <AvatarImage source={{ uri: 'https://github.com/shadcn.png' }} />
-              <AvatarFallback className="bg-muted">
-                <Text className="text-2xl font-bold text-muted-foreground">US</Text>
-              </AvatarFallback>
-            </Avatar>
+      <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
+        <View className="flex-row items-center justify-between px-6 pb-2 pt-4">
+          <TouchableOpacity
+            onPress={() => router.back()}
+            className="h-10 w-10 items-center justify-center rounded-full bg-muted/50">
+            <ArrowLeft size={20} className="text-foreground" />
+          </TouchableOpacity>
+          <Text className="text-lg font-bold text-foreground">Perfil & Ajustes</Text>
+          <View className="w-10" />
+        </View>
+
+        <View className="mt-6 items-center px-6">
+          <View className="relative">
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={handlePickImage}
+              className="relative h-28 w-28 rounded-full border-4 border-primary bg-background p-1">
+              <Avatar className="h-full w-full" alt={''}>
+                <AvatarImage source={{ uri: user.avatarUri || 'https://github.com/shadcn.png' }} />
+                <AvatarFallback>
+                  <Text>US</Text>
+                </AvatarFallback>
+              </Avatar>
+
+              <View className="absolute inset-0 items-center justify-center rounded-full bg-black/30 opacity-0 active:opacity-100">
+                <Camera color="white" size={24} />
+              </View>
+            </TouchableOpacity>
+
+            <View className="absolute bottom-0 right-0 z-10 h-8 w-8 items-center justify-center rounded-full border-2 border-background bg-primary">
+              <Text className="text-xs font-bold text-white">{user.level}</Text>
+            </View>
+
+            <TouchableOpacity
+              onPress={handlePickImage}
+              className="absolute bottom-0 left-0 z-10 h-8 w-8 items-center justify-center rounded-full border-2 border-background bg-muted">
+              <Camera size={14} className="text-foreground" />
+            </TouchableOpacity>
           </View>
 
-          <Text className="text-2xl font-bold text-foreground">{user.name}</Text>
-          <Text
-            className="mb-1 text-sm font-bold uppercase tracking-widest"
-            style={{ color: currentTier.color }}>
-            {currentTier.label} • {user.streak} Dias
+          {!isEditing ? (
+            <View className="mt-4 items-center">
+              <Text className="text-2xl font-bold text-foreground">{user.name}</Text>
+              <Text className="text-sm text-muted-foreground">Membro desde 2024</Text>
+              <Button variant="ghost" className="mt-2 h-8 px-4" onPress={() => setIsEditing(true)}>
+                <Text className="text-xs font-bold text-primary">Editar Perfil</Text>
+              </Button>
+            </View>
+          ) : (
+            <View className="mt-4 w-full gap-3">
+              <Input value={name} onChangeText={setName} placeholder="Seu nome" autoFocus />
+              <View className="flex-row gap-2">
+                <Button variant="outline" className="flex-1" onPress={() => setIsEditing(false)}>
+                  <Text>Cancelar</Text>
+                </Button>
+                <Button className="flex-1" onPress={handleSave}>
+                  <Save size={16} color="white" className="mr-2" />
+                  <Text>Salvar</Text>
+                </Button>
+              </View>
+            </View>
+          )}
+        </View>
+
+        <View className="mt-8 flex-row flex-wrap gap-3 px-6">
+          <View className="w-[48%] grow items-center gap-2 rounded-xl border border-border bg-card p-4">
+            <Flame size={20} className="text-orange-500" />
+            <View className="items-center">
+              <Text className="text-xl font-bold text-foreground">{user.streak}</Text>
+              <Text className="text-xs text-muted-foreground">Ofensiva</Text>
+            </View>
+          </View>
+
+          <View className="w-[48%] grow items-center gap-2 rounded-xl border border-border bg-card p-4">
+            <Trophy size={20} className="text-yellow-500" />
+            <View className="items-center">
+              <Text className="text-xl font-bold text-foreground">{user.totalXp}</Text>
+              <Text className="text-xs text-muted-foreground">Total XP</Text>
+            </View>
+          </View>
+
+          <View className="w-[48%] grow items-center gap-2 rounded-xl border border-border bg-card p-4">
+            <Dumbbell size={20} className="text-primary" />
+            <View className="items-center">
+              <Text className="text-xl font-bold text-foreground">{totalWorkouts}</Text>
+              <Text className="text-xs text-muted-foreground">Treinos</Text>
+            </View>
+          </View>
+
+          <View className="w-[48%] grow items-center gap-2 rounded-xl border border-border bg-card p-4">
+            <Coffee size={20} className="text-blue-500" />
+            <View className="items-center">
+              <Text className="text-xl font-bold text-foreground">{totalRestDays}</Text>
+              <Text className="text-xs text-muted-foreground">Descansos</Text>
+            </View>
+          </View>
+        </View>
+
+        <View className="mt-8 gap-6 px-6">
+          <Text className="text-sm font-bold uppercase text-muted-foreground">Preferências</Text>
+
+          <View className="flex-row items-center justify-between rounded-xl border border-border bg-muted/30 p-4">
+            <View>
+              <Text className="font-bold text-foreground">Aparência</Text>
+              <Text className="text-xs text-muted-foreground">Alternar modo escuro/claro</Text>
+            </View>
+            <ThemeToggle />
+          </View>
+
+          <Text className="mt-2 text-sm font-bold uppercase text-muted-foreground">
+            Dados & Backup
           </Text>
 
-          <View className="mt-2 w-48 gap-1">
-            <View className="flex-row justify-between">
-              <Text className="text-[10px] font-bold text-muted-foreground">
-                Nível {user.level}
-              </Text>
-              <Text className="text-[10px] font-bold text-muted-foreground">
-                {Math.floor(xpPercentage)}%
+          <TouchableOpacity
+            onPress={handleExportData}
+            className="flex-row items-center gap-4 rounded-xl border border-border bg-card p-4 active:bg-muted">
+            <View className="h-10 w-10 items-center justify-center rounded-full bg-green-500/10">
+              <Copy size={20} className="text-green-500" />
+            </View>
+            <View className="flex-1">
+              <Text className="font-bold text-foreground">Copiar Dados (JSON)</Text>
+              <Text className="text-xs text-muted-foreground">Salve seu backup manualmente</Text>
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            className="flex-row items-center gap-4 rounded-xl border border-border bg-card p-4 active:bg-muted"
+            onPress={() =>
+              Alert.alert('Em Breve', 'A exportação de arquivo estará disponível na v1.1')
+            }>
+            <View className="h-10 w-10 items-center justify-center rounded-full bg-blue-500/10">
+              <Share2 size={20} className="text-blue-500" />
+            </View>
+            <View className="flex-1">
+              <Text className="font-bold text-foreground">Exportar Arquivo</Text>
+              <Text className="text-xs text-muted-foreground">
+                Gerar arquivo .json para download
               </Text>
             </View>
-            <View className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-              <View
-                className="h-full rounded-full bg-foreground"
-                style={{ width: `${xpPercentage}%` }}
-              />
-            </View>
-          </View>
+          </TouchableOpacity>
         </View>
 
-        <View className="mb-10 flex-row justify-between px-6">
-          <View className="items-center">
-            <View className="mb-2 h-10 w-10 items-center justify-center rounded-full bg-muted/50">
-              <Calendar size={18} color={iconColor} />
-            </View>
-            <Text className="text-lg font-bold text-foreground">{stats.workouts}</Text>
-            <Text className="text-[10px] uppercase text-muted-foreground">Treinos</Text>
-          </View>
-          <View className="items-center">
-            <View className="mb-2 h-10 w-10 items-center justify-center rounded-full bg-muted/50">
-              <Clock size={18} color={iconColor} />
-            </View>
-            <Text className="text-lg font-bold text-foreground">{stats.hours}h</Text>
-            <Text className="text-[10px] uppercase text-muted-foreground">Tempo Total</Text>
-          </View>
-          <View className="items-center">
-            <View className="mb-2 h-10 w-10 items-center justify-center rounded-full bg-muted/50">
-              <Dumbbell size={18} color={iconColor} />
-            </View>
-            <Text className="text-lg font-bold text-foreground">{stats.tonnage}</Text>
-            <Text className="text-[10px] uppercase text-muted-foreground">Carga Total</Text>
-          </View>
-        </View>
-
-        <View className="px-6">
-          <Text className="mb-6 text-lg font-bold text-foreground">Sua Jornada</Text>
-
-          {STREAK_TIERS.map((tier, index) => {
-            const isUnlocked = user.streak >= tier.days;
-            const isCurrent = currentTier.days === tier.days;
-            const Icon = tier.icon;
-            const isLast = index === STREAK_TIERS.length - 1;
-
-            return (
-              <View key={tier.days} className="flex-row">
-                <View className="mr-4 w-8 items-center">
-                  <View
-                    className={`z-10 h-8 w-8 items-center justify-center rounded-full border-2 bg-background ${
-                      isUnlocked ? '' : 'border-muted'
-                    }`}
-                    style={
-                      isUnlocked
-                        ? {
-                            borderColor: tier.color,
-                            backgroundColor: isCurrent ? `${tier.color}20` : undefined,
-                          }
-                        : {}
-                    }>
-                    {isUnlocked ? (
-                      <Icon size={14} color={tier.color} />
-                    ) : (
-                      <Lock size={12} color={mutedIconColor} />
-                    )}
-                  </View>
-
-                  {!isLast && <View className="my-1 w-[2px] flex-1 bg-border/50" />}
-                </View>
-
-                <View className={`flex-1 pb-8 ${isUnlocked ? 'opacity-100' : 'opacity-40'}`}>
-                  <View className="mb-1 flex-row items-center justify-between">
-                    <Text
-                      className="text-base font-bold"
-                      style={isUnlocked ? { color: tier.color } : { color: 'gray' }}>
-                      {tier.label}
-                    </Text>
-                    {isCurrent && (
-                      <View
-                        className="rounded-full px-2 py-0.5"
-                        style={{ backgroundColor: tier.color }}>
-                        <Text className="text-[10px] font-bold text-white">ATUAL</Text>
-                      </View>
-                    )}
-                  </View>
-
-                  <Text className="mb-1 text-xs font-bold text-foreground">
-                    {tier.days} Dias de Ofensiva
-                  </Text>
-                  <Text className="text-xs leading-snug text-muted-foreground">{tier.desc}</Text>
-                </View>
-              </View>
-            );
-          })}
+        <View className="mt-12 items-center gap-2">
+          <ShieldCheck size={24} className="text-muted-foreground/30" />
+          <Text className="text-xs font-medium text-muted-foreground">Iron Streak v1.0.0</Text>
+          <Text className="text-[10px] text-muted-foreground/60">
+            Built with Expo & React Native
+          </Text>
         </View>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
