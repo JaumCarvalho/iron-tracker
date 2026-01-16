@@ -6,6 +6,8 @@ import { AppState } from './types';
 import { createUserSlice } from './slices/user-slice';
 import { createWorkoutSlice } from './slices/workout-slice';
 import { createDevSlice } from './slices/dev-slice';
+import { createTemplateSlice } from './slices/template-slice';
+import { template } from '@babel/core';
 
 export const useStore = create<AppState>()(
   persist(
@@ -13,6 +15,7 @@ export const useStore = create<AppState>()(
       ...createUserSlice(...a),
       ...createWorkoutSlice(...a),
       ...createDevSlice(...a),
+      ...createTemplateSlice(...a),
     }),
     {
       name: 'iron-streak-storage',
@@ -22,6 +25,7 @@ export const useStore = create<AppState>()(
         history: state.history,
         restDays: state.restDays,
         dietLog: state.dietLog,
+        templates: state.templates,
       }),
     }
   )

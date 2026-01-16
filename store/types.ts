@@ -1,5 +1,6 @@
 import { UserProfile } from '@/types/user-profile';
 import { WorkoutSession } from '@/types/workout-session';
+import { WorkoutTemplate } from '@/types/workout-template';
 
 export interface UserSlice {
   user: UserProfile;
@@ -24,5 +25,10 @@ export interface DevSlice {
   resetData: () => void;
   seedData: (daysToSimulate: number) => void;
 }
-
-export type AppState = UserSlice & WorkoutSlice & DevSlice;
+export interface TemplateSlice {
+  templates: WorkoutTemplate[];
+  saveTemplate: (template: WorkoutTemplate) => void;
+  deleteTemplate: (id: string) => void;
+}
+export type AppState = UserSlice & WorkoutSlice & DevSlice & TemplateSlice;
+export { WorkoutTemplate };

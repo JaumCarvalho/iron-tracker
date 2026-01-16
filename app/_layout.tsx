@@ -7,6 +7,15 @@ import { useColorScheme } from 'nativewind';
 import { NAV_THEME } from '@/lib/theme';
 import * as SystemUI from 'expo-system-ui';
 
+import * as SplashScreen from 'expo-splash-screen';
+SplashScreen.preventAutoHideAsync();
+
+export { ErrorBoundary } from 'expo-router';
+
+export const unstable_settings = {
+  initialRouteName: '(tabs)',
+};
+
 export default function RootLayout() {
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === 'dark';
@@ -35,18 +44,25 @@ export default function RootLayout() {
       <Stack
         screenOptions={{
           headerShown: false,
-
+          animation: 'default',
           contentStyle: { backgroundColor: isDark ? bgDark : bgLight },
         }}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="workout/new" options={{ presentation: 'modal', headerShown: false }} />
-        <Stack.Screen name="analytics/exercise-details" options={{ headerShown: false }} />
+
         <Stack.Screen
-          name="profile/index"
+          name="workout/new"
           options={{
+            presentation: 'modal',
             headerShown: false,
+            gestureEnabled: true,
           }}
         />
+
+        <Stack.Screen name="workout/routines" options={{ headerShown: false }} />
+        <Stack.Screen name="workout/editor" options={{ headerShown: false }} />
+
+        <Stack.Screen name="analytics/exercise-details" options={{ headerShown: false }} />
+        <Stack.Screen name="profile/index" options={{ headerShown: false }} />
       </Stack>
     </ThemeProvider>
   );

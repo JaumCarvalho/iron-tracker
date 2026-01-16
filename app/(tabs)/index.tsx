@@ -24,7 +24,7 @@ import {
   Plus,
   Coffee,
 } from 'lucide-react-native';
-import { SIMULATION_OPTIONS, STREAK_TIERS } from '@/lib/constants';
+import { STREAK_TIERS } from '@/lib/constants';
 import { DevFloatingMenu } from '@/components/features/dev-floating-menu';
 
 dayjs.locale('pt-br');
@@ -60,18 +60,6 @@ export default function Dashboard() {
 
   const handleToggleRest = () => toggleRestDay(selectedDate.toISOString());
 
-  const handleReset = () => {
-    Alert.alert('Zerar Tudo?', 'Isso apagará todo seu histórico.', [
-      { text: 'Cancelar', style: 'cancel' },
-      { text: 'Zerar', style: 'destructive', onPress: resetData },
-    ]);
-  };
-
-  const quickSeed = (days: number) => {
-    resetData();
-    setTimeout(() => seedData(days), 50);
-  };
-
   return (
     <View className="flex-1 bg-background">
       <ScrollView
@@ -89,7 +77,7 @@ export default function Dashboard() {
             </Text>
 
             <TouchableOpacity
-              onPress={() => router.push('/workout/new')}
+              onPress={() => router.push('/workout/routines')}
               className="flex-row items-center gap-1 rounded-full bg-primary/10 px-3 py-1.5">
               <Plus size={16} className="text-primary" />
               <Text className="text-xs font-bold text-primary">Novo Treino</Text>
