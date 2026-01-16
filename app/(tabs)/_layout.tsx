@@ -38,11 +38,10 @@ export default function TabLayout() {
         }}
       />
 
-      {/* BOTÃO CENTRAL DE AÇÃO */}
       <Tabs.Screen
         name="workout"
         options={{
-          title: '', // Sem título para destacar o ícone
+          title: '',
           tabBarIcon: () => (
             <View className="-mt-10 h-14 w-14 items-center justify-center rounded-full border-4 border-background bg-primary shadow-sm">
               <Plus size={30} color={colors.background} />
@@ -51,10 +50,8 @@ export default function TabLayout() {
         }}
         listeners={() => ({
           tabPress: (e) => {
-            // 1. Impede a navegação padrão da Tab (que abriria uma tela vazia)
             e.preventDefault();
 
-            // 2. Redireciona para o seu novo Gerenciador de Rotinas
             router.push('/workout/routines');
           },
         })}
