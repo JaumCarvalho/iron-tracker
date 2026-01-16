@@ -1,37 +1,28 @@
-export type Exercise = {
-  id: string;
-  name: string;
-  muscleGroup: string;
-};
+import { UserProfile } from '@/types/user-profile';
+import { WorkoutSession } from '@/types/workout-session';
 
-export type WorkoutSet = {
-  weight: number;
-  reps: number;
-  completed: boolean;
-  distance?: number;
-  duration?: number;
-};
+export interface UserSlice {
+  user: UserProfile;
+  updateUser: (data: Partial<UserProfile>) => void;
+  clearProfileOnly: () => void;
+}
 
-export type ExerciseLog = {
-  exerciseId: string;
-  name: string;
-  group: string;
-  sets: WorkoutSet[];
-};
+export interface WorkoutSlice {
+  history: WorkoutSession[];
+  restDays: string[];
+  dietLog: Record<string, any>;
 
-export type WorkoutSession = {
-  id: string;
-  date: string;
-  durationSeconds: number;
-  exercises: ExerciseLog[];
-  xpEarned: number;
-};
+  addWorkout: (session: WorkoutSession) => void;
+  toggleRestDay: (date: string) => void;
+  checkStreak: () => void;
+  clearHistoryOnly: () => void;
+}
 
-export type UserProfile = {
-  name: string;
-  streak: number;
-  lastActivityDate: string | null;
-  level: number;
-  totalXp: number;
-  avatarUri?: string;
-};
+export interface DevSlice {
+  devLogs: string[];
+  addDevLog: (msg: string) => void;
+  resetData: () => void;
+  seedData: (daysToSimulate: number) => void;
+}
+
+export type AppState = UserSlice & WorkoutSlice & DevSlice;
