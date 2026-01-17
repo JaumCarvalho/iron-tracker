@@ -1,213 +1,247 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, memo } from 'react';
 import { View, TouchableOpacity } from 'react-native';
 import { Text } from '@/components/ui/text';
-import { Card, CardContent, CardHeader, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Activity, Footprints, Timer, TrendingUp } from 'lucide-react-native';
 import { useStore } from '@/store/useStore';
-import { Timer, MapPin, Footprints, X, ChevronRight } from 'lucide-react-native';
 import dayjs from 'dayjs';
-import { STREAK_TIERS } from '@/lib/constants';
 
 type TimeRange = 'week' | 'month' | 'all';
 
-export function CardioAnalysis() {
-  const { history, user } = useStore();
-  const [selectedActivity, setSelectedActivity] = useState<string | null>(null);
-  const [timeRange, setTimeRange] = useState<TimeRange>('week');
+const FilterGroup = memo(
+  ({
+    current,
+    onChange,
+    accentColor,
+  }: {
+    current: TimeRange;
+    onChange: (v: TimeRange) => void;
+    accentColor: string;
+  }) => (
+    <View className="flex-row rounded-lg bg-muted/50 p-0.5">
+      {(['week', 'month', 'all'] as TimeRange[]).map((value) => {
+        const isActive = current === value;
+        return (
+          <TouchableOpacity
+            key={value}
+            onPress={() => onChange(value)}
+            className={`rounded-md border px-2 py-1 ${
+              !isActive ? 'border-transparent bg-transparent' : ''
+            }`}
+            style={isActive ? { backgroundColor: accentColor, borderColor: accentColor } : {}}>
+            <Text
+              className={`text-[10px] font-bold ${
+                isActive ? 'text-white' : 'text-muted-foreground'
+              }`}>
+              {value === 'week' ? '7D' : value === 'month' ? '30D' : 'Total'}
+            </Text>
+          </TouchableOpacity>
+        );
+      })}
+    </View>
+  )
+);
 
-  const tierColor = useMemo(() => {
-    const tier =
-      STREAK_TIERS.find((t) => user.streak >= t.days) || STREAK_TIERS[STREAK_TIERS.length - 1];
-    return tier.color;
-  }, [user.streak]);
+const EmptyState = memo(() => (
+  <View className="h-40 items-center justify-center rounded-lg border-2 border-dashed border-muted bg-muted/10">
+    <Footprints size={24} className="mb-2 text-muted-foreground opacity-50" />
+    <Text className="text-xs text-muted-foreground">Nenhum cardio registrado neste período.</Text>
+  </View>
+));
 
-  const today = dayjs();
-  let startDate: dayjs.Dayjs | null = null;
-
-  if (timeRange === 'week') startDate = today.subtract(6, 'day');
-  if (timeRange === 'month') startDate = today.subtract(29, 'day');
-
-  let totalKm = 0;
-  let totalMinutes = 0;
-  let cardioSessions = 0;
-
-  const activityBreakdown: Record<string, { km: number; min: number; count: number }> = {};
-
-  history.forEach((session) => {
-    const sessionDate = dayjs(session.date);
-
-    if (startDate && sessionDate.isBefore(startDate, 'day')) return;
-
-    session.exercises.forEach((ex) => {
-      if (ex.group === 'Cardio') {
-        ex.sets.forEach((set) => {
-          const dist = set.distance || 0;
-          const dur = set.duration || 0;
-
-          totalKm += dist;
-          totalMinutes += dur;
-          if (dur > 0 || dist > 0) cardioSessions++;
-
-          if (!activityBreakdown[ex.name]) {
-            activityBreakdown[ex.name] = { km: 0, min: 0, count: 0 };
-          }
-          activityBreakdown[ex.name].km += dist;
-          activityBreakdown[ex.name].min += dur;
-          activityBreakdown[ex.name].count += 1;
-        });
-      }
-    });
-  });
-
-  if (timeRange === 'all' && cardioSessions === 0) return null;
-
-  const displayKm = selectedActivity ? activityBreakdown[selectedActivity]?.km || 0 : totalKm;
-  const displayMinutes = selectedActivity
-    ? activityBreakdown[selectedActivity]?.min || 0
-    : totalMinutes;
-
-  const cardTitle = selectedActivity ? selectedActivity : 'Análise Cardio';
-
-  const FilterButton = ({ label, value }: { label: string; value: TimeRange }) => (
-    <TouchableOpacity
-      onPress={() => setTimeRange(value)}
-      className={`rounded-md border px-2 py-1 ${
-        timeRange === value ? 'border-primary bg-primary' : 'border-transparent bg-transparent'
-      }`}>
-      <Text
-        className={`text-[10px] font-bold ${
-          timeRange === value ? 'text-primary-foreground' : 'text-muted-foreground'
-        }`}>
-        {label}
+const CardioItem = memo(({ name, dist, time, count, color, isSelected, onPress }: any) => (
+  <TouchableOpacity
+    onPress={onPress}
+    activeOpacity={0.7}
+    className={`mb-2 flex-row items-center justify-between rounded-lg border p-2 last:mb-0 ${
+      isSelected ? 'bg-muted/40' : 'border-border/50 bg-muted/10'
+    }`}
+    style={isSelected ? { borderColor: color, borderWidth: 1 } : {}}>
+    <View className="flex-1">
+      <Text className={`font-bold ${isSelected ? 'text-foreground' : 'text-muted-foreground'}`}>
+        {name}
       </Text>
-    </TouchableOpacity>
-  );
+      <Text className="text-[10px] text-muted-foreground">{count} sessões</Text>
+    </View>
+    <View className="items-end">
+      <View className="flex-row items-center gap-1">
+        <Text className="text-sm font-bold" style={{ color: color }}>
+          {dist.toFixed(1)}km
+        </Text>
+      </View>
+      <Text className="text-[10px] text-muted-foreground">{time.toFixed(0)}min</Text>
+    </View>
+  </TouchableOpacity>
+));
+
+function useCardioStats(history: any[], timeRange: TimeRange) {
+  const startDate = useMemo(() => {
+    const today = dayjs();
+    if (timeRange === 'week') return today.subtract(6, 'day');
+    if (timeRange === 'month') return today.subtract(29, 'day');
+    return null;
+  }, [timeRange]);
+
+  return useMemo(() => {
+    let totalDist = 0;
+    let totalTime = 0;
+    let sessions = 0;
+    const breakdown: Record<string, { dist: number; time: number; count: number }> = {};
+
+    history.forEach((workout) => {
+      if (startDate) {
+        if (dayjs(workout.date).isBefore(startDate, 'day')) return;
+      }
+
+      workout.exercises.forEach((ex: any) => {
+        if (ex.group !== 'Cardio') return;
+
+        const exDist = ex.sets.reduce(
+          (acc: number, s: any) => acc + (parseFloat(s.distance) || 0),
+          0
+        );
+        const exTime = ex.sets.reduce(
+          (acc: number, s: any) =>
+            acc + (parseFloat(s.duration) || parseFloat(s.manualDuration) || 0),
+          0
+        );
+
+        if (exDist > 0 || exTime > 0) {
+          sessions++;
+          totalDist += exDist;
+          totalTime += exTime;
+
+          if (!breakdown[ex.name]) breakdown[ex.name] = { dist: 0, time: 0, count: 0 };
+          breakdown[ex.name].dist += exDist;
+          breakdown[ex.name].time += exTime;
+          breakdown[ex.name].count += 1;
+        }
+      });
+    });
+
+    const sortedActivities = Object.entries(breakdown)
+      .map(([name, data]) => ({ name, ...data }))
+      .sort((a, b) => b.dist - a.dist);
+
+    return { totalDist, totalTime, sessions, activities: sortedActivities };
+  }, [history, startDate]);
+}
+
+export function CardioAnalysis() {
+  const history = useStore((state) => state.history);
+  const accentColor = useStore((state) => state.user.accentColor) || '#a1a1aa';
+
+  const [timeRange, setTimeRange] = useState<TimeRange>('week');
+  const [selectedActivity, setSelectedActivity] = useState<string | null>(null);
+
+  const { totalDist, totalTime, sessions, activities } = useCardioStats(history, timeRange);
+
+  const displayStats = useMemo(() => {
+    if (selectedActivity) {
+      const specific = activities.find((a) => a.name === selectedActivity);
+      if (specific) {
+        return {
+          dist: specific.dist,
+          time: specific.time,
+          count: specific.count,
+          label: selectedActivity,
+        };
+      }
+    }
+    return {
+      dist: totalDist,
+      time: totalTime,
+      count: sessions,
+      label: 'Geral',
+    };
+  }, [selectedActivity, activities, totalDist, totalTime, sessions]);
+
+  const handleSelect = (name: string) => {
+    if (selectedActivity === name) {
+      setSelectedActivity(null);
+    } else {
+      setSelectedActivity(name);
+    }
+  };
+
   return (
-    <Card className="mt-6 w-full border-border/50 bg-card/80">
+    <Card className="w-full border-border/50 bg-card/80">
       <CardHeader className="pb-2">
-        <View className="mb-2 flex-row items-center justify-between">
-          <View className="flex-row items-center gap-2">
-            <Footprints size={18} color={tierColor} />
-            <Text className="text-base font-bold text-foreground">{cardTitle}</Text>
-          </View>
-
-          {selectedActivity && (
-            <TouchableOpacity onPress={() => setSelectedActivity(null)}>
-              <X size={20} className="text-muted-foreground" />
-            </TouchableOpacity>
-          )}
-        </View>
-
         <View className="flex-row items-center justify-between">
-          <CardDescription>
-            {timeRange === 'week'
-              ? 'Últimos 7 dias'
-              : timeRange === 'month'
-                ? 'Últimos 30 dias'
-                : 'Todo o período'}
-          </CardDescription>
-
-          <View className="flex-row rounded-lg bg-muted/50 p-0.5">
-            <FilterButton label="7D" value="week" />
-            <FilterButton label="30D" value="month" />
-            <FilterButton label="Total" value="all" />
+          <View className="flex-row items-center gap-2">
+            <Activity size={18} color={accentColor} />
+            <Text className="text-base font-bold text-foreground">
+              Cardio{' '}
+              <Text className="text-xs font-normal text-muted-foreground">
+                ({displayStats.label})
+              </Text>
+            </Text>
           </View>
+
+          <FilterGroup current={timeRange} onChange={setTimeRange} accentColor={accentColor} />
         </View>
       </CardHeader>
 
       <CardContent>
-        <View className="mb-4 flex-row gap-3">
-          <View
-            className="flex-1 items-center rounded-xl border p-3"
-            style={
-              selectedActivity
-                ? {
-                    borderColor: `${tierColor}40`,
-                    backgroundColor: `${tierColor}20`,
-                  }
-                : {
-                    borderColor: `${tierColor}20`,
-                    backgroundColor: `${tierColor}10`,
-                  }
-            }>
-            <MapPin size={20} className="mb-1" color={tierColor} />
-            <Text className="text-xl font-bold text-foreground">{displayKm.toFixed(1)}</Text>
-            <Text className="text-[10px] font-bold uppercase text-muted-foreground">Km Total</Text>
-          </View>
+        {totalDist === 0 && totalTime === 0 ? (
+          <EmptyState />
+        ) : (
+          <View>
+            <View className="mb-4 flex-row gap-2">
+              <View
+                className="flex-1 items-center rounded-lg border p-2"
+                style={{
+                  backgroundColor: `${accentColor}10`,
+                  borderColor: `${accentColor}20`,
+                }}>
+                <Footprints size={16} className="mb-1" color={accentColor} />
+                <Text className="text-lg font-bold text-foreground">
+                  {displayStats.dist.toFixed(1)}
+                  <Text className="text-xs font-normal text-muted-foreground">km</Text>
+                </Text>
+              </View>
 
-          <View
-            className="flex-1 items-center rounded-xl border p-3"
-            style={
-              selectedActivity
-                ? {
-                    borderColor: `${tierColor}40`,
-                    backgroundColor: `${tierColor}20`,
-                  }
-                : {
-                    borderColor: `${tierColor}20`,
-                    backgroundColor: `${tierColor}10`,
-                  }
-            }>
-            <Timer size={20} className="mb-1" color={tierColor} />
-            <Text className="text-xl font-bold text-foreground">
-              {Math.floor(displayMinutes / 60)}h {displayMinutes % 60}m
+              <View
+                className="flex-1 items-center rounded-lg border p-2"
+                style={{
+                  backgroundColor: `${accentColor}10`,
+                  borderColor: `${accentColor}20`,
+                }}>
+                <Timer size={16} className="mb-1" color={accentColor} />
+                <Text className="text-lg font-bold text-foreground">
+                  {displayStats.time.toFixed(0)}
+                  <Text className="text-xs font-normal text-muted-foreground">min</Text>
+                </Text>
+              </View>
+
+              <View
+                className="flex-1 items-center rounded-lg border p-2"
+                style={{
+                  backgroundColor: `${accentColor}10`,
+                  borderColor: `${accentColor}20`,
+                }}>
+                <TrendingUp size={16} className="mb-1" color={accentColor} />
+                <Text className="text-lg font-bold text-foreground">
+                  {displayStats.count}
+                  <Text className="text-xs font-normal text-muted-foreground">x</Text>
+                </Text>
+              </View>
+            </View>
+
+            <Text className="mb-2 text-xs font-bold uppercase text-muted-foreground">
+              Atividades
             </Text>
-            <Text className="text-[10px] font-bold uppercase text-muted-foreground">Duração</Text>
+            {activities.map((activity) => (
+              <CardioItem
+                key={activity.name}
+                {...activity}
+                color={accentColor}
+                isSelected={selectedActivity === activity.name}
+                onPress={() => handleSelect(activity.name)}
+              />
+            ))}
           </View>
-        </View>
-
-        <View className="gap-2">
-          {Object.keys(activityBreakdown).length > 0 ? (
-            <View className="overflow-hidden rounded-xl border border-border bg-muted/30">
-              {Object.entries(activityBreakdown)
-                .sort(([, a], [, b]) => b.min - a.min)
-                .map(([name, stats], idx) => {
-                  const isSelected = selectedActivity === name;
-
-                  return (
-                    <TouchableOpacity
-                      key={name}
-                      onPress={() => setSelectedActivity(isSelected ? null : name)}
-                      className={`flex-row items-center justify-between p-3 ${
-                        idx !== 0 ? 'border-t border-border/50' : ''
-                      }`}
-                      style={isSelected ? { backgroundColor: `${tierColor}15` } : {}}>
-                      <View className="flex-row items-center gap-2">
-                        <Text
-                          className={`text-sm ${
-                            isSelected ? 'font-bold' : 'font-medium text-foreground'
-                          }`}
-                          style={isSelected ? { color: tierColor } : {}}>
-                          {name}
-                        </Text>
-                      </View>
-
-                      <View className="flex-row items-center gap-2">
-                        <View className="items-end">
-                          <Text
-                            className={`text-xs font-bold ${isSelected ? '' : 'text-foreground'}`}
-                            style={isSelected ? { color: tierColor } : {}}>
-                            {stats.km > 0 ? `${stats.km.toFixed(1)} km` : ''}
-                            {stats.km > 0 && stats.min > 0 ? ' • ' : ''}
-                            {stats.min > 0 ? `${stats.min} min` : ''}
-                          </Text>
-                          <Text className="text-[10px] text-muted-foreground">
-                            {stats.count} sessões
-                          </Text>
-                        </View>
-                        {isSelected && <ChevronRight size={14} color={tierColor} />}
-                      </View>
-                    </TouchableOpacity>
-                  );
-                })}
-            </View>
-          ) : (
-            <View className="items-center py-4">
-              <Text className="text-xs text-muted-foreground">
-                Nenhuma atividade cardio neste período.
-              </Text>
-            </View>
-          )}
-        </View>
+        )}
       </CardContent>
     </Card>
   );

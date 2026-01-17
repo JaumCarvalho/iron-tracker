@@ -9,10 +9,16 @@ interface WeekCalendarProps {
   selectedDate: dayjs.Dayjs;
   onSelectDate: (date: dayjs.Dayjs) => void;
   tierColor: string;
+  restDays?: string[];
 }
 
-export function WeekCalendar({ selectedDate, onSelectDate, tierColor }: WeekCalendarProps) {
-  const { history, restDays } = useStore();
+export function WeekCalendar({
+  selectedDate,
+  onSelectDate,
+  tierColor,
+  restDays,
+}: WeekCalendarProps) {
+  const { history } = useStore();
 
   const weekDays = useMemo(() => {
     const startOfWeek = selectedDate.startOf('week');
@@ -24,7 +30,6 @@ export function WeekCalendar({ selectedDate, onSelectDate, tierColor }: WeekCale
 
     history.forEach((h) => {
       const dateKey = dayjs(h.date).format('YYYY-MM-DD');
-
       const current = map.get(dateKey) || { hasWeights: false, hasCardio: false };
 
       h.exercises.forEach((ex) => {
@@ -44,7 +49,7 @@ export function WeekCalendar({ selectedDate, onSelectDate, tierColor }: WeekCale
   const restMap = useMemo(() => new Set(restDays), [restDays]);
 
   return (
-    <View className="flex-row justify-between rounded-xl border border-border bg-card p-4 shadow-sm">
+    <View className="flex-row justify-between pt-2">
       {weekDays.map((date) => {
         const isSelected = date.isSame(selectedDate, 'day');
         const isToday = date.isSame(dayjs(), 'day');
@@ -62,18 +67,26 @@ export function WeekCalendar({ selectedDate, onSelectDate, tierColor }: WeekCale
           <TouchableOpacity
             key={dateStr}
             onPress={() => onSelectDate(date)}
-            className={`h-[72px] items-center justify-between rounded-lg px-1 py-2 ${
-              isSelected ? 'bg-muted' : 'bg-transparent'
+            className={`h-[72px] w-[13%] items-center justify-between rounded-lg px-1 py-2 ${
+              isSelected ? 'bg-muted/50' : 'bg-transparent'
             }`}>
             <Text
-              className={`text-[10px] uppercase ${isSelected ? 'font-bold text-foreground' : 'text-muted-foreground'}`}>
+              className={`text-[10px] uppercase ${
+                isSelected ? 'font-bold text-foreground' : 'text-muted-foreground'
+              }`}>
               {date.format('ddd').replace('.', '')}
             </Text>
 
             <View
-              className={`h-8 w-8 items-center justify-center rounded-full border ${
-                isToday ? 'border-primary bg-primary/10' : 'border-transparent bg-muted/30'
-              }`}>
+              className="h-8 w-8 items-center justify-center rounded-full border"
+              style={{
+                borderColor: isToday ? tierColor : 'transparent',
+                backgroundColor: isToday
+                  ? `${tierColor}20`
+                  : isSelected
+                    ? 'transparent'
+                    : 'rgba(113, 113, 122, 0.1)',
+              }}>
               <Text
                 className={`text-sm ${
                   isToday || isSelected ? 'font-bold text-foreground' : 'text-foreground'
@@ -84,7 +97,7 @@ export function WeekCalendar({ selectedDate, onSelectDate, tierColor }: WeekCale
 
             <View className="h-3 flex-row items-center justify-center gap-0.5">
               {showRest ? (
-                <Coffee size={12} color="#3b82f6" />
+                <Coffee size={12} color={tierColor} />
               ) : hasWorkout ? (
                 <>
                   {showWeights && <Dumbbell size={12} color={tierColor} />}

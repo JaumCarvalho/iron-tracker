@@ -7,7 +7,6 @@ import { createUserSlice } from './slices/user-slice';
 import { createWorkoutSlice } from './slices/workout-slice';
 import { createDevSlice } from './slices/dev-slice';
 import { createTemplateSlice } from './slices/template-slice';
-import { template } from '@babel/core';
 
 export const useStore = create<AppState>()(
   persist(

@@ -5,4 +5,5 @@ export type UserProfile = {
   level: number;
   totalXp: number;
   avatarUri?: string;
+  accentColor: string;
 };

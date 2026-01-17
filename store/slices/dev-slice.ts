@@ -15,7 +15,15 @@ export const createDevSlice: StateCreator<AppState, [], [], DevSlice> = (set, ge
 
   resetData: () => {
     set({
-      user: { name: 'Giga Chad', streak: 0, lastActivityDate: null, level: 1, totalXp: 0 },
+      user: {
+        name: 'Usuário',
+        streak: 0,
+        lastActivityDate: null,
+        level: 1,
+        totalXp: 0,
+        avatarUri: undefined,
+        accentColor: '#09090b',
+      },
       history: [],
       restDays: [],
       dietLog: {},
@@ -153,15 +161,18 @@ export const createDevSlice: StateCreator<AppState, [], [], DevSlice> = (set, ge
     set({
       restDays,
       user: {
-        name: 'Giga Chad Pro Max',
+        name: 'Giga Chad Pro',
         streak: 0,
         lastActivityDate: new Date().toISOString(),
         level: Math.floor(totalXp / 1000) + 1,
         totalXp: totalXp,
+        avatarUri: undefined,
+        accentColor: '#ea580c',
       },
       history,
       dietLog,
     });
+
     get().checkStreak();
     get().addDevLog(`Seed de ${daysToSimulate} dias aplicado.`);
   },

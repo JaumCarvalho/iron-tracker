@@ -7,95 +7,107 @@ import { Plus, Coffee, Dumbbell, Activity, CalendarDays, TrendingUp } from 'luci
 import dayjs from 'dayjs';
 import { WorkoutHistoryItem } from '@/components/features/workout-history-item';
 
-export const DateHeader = memo(({ selectedDate, isToday, onNewWorkout }: any) => (
-  <View className="mb-3 flex-row items-center justify-between">
-    <Text className="text-lg font-bold text-foreground">
-      {isToday ? 'Hoje' : selectedDate.format('dddd, DD [de] MMMM')}
-    </Text>
+export const DateHeader = memo(
+  ({ selectedDate, isToday, onNewWorkout, accentColor = '#a1a1aa' }: any) => (
+    <View className="mb-3 flex-row items-center justify-between">
+      <Text className="text-lg font-bold text-foreground">
+        {isToday ? 'Hoje' : selectedDate.format('dddd, DD [de] MMMM')}
+      </Text>
 
-    <TouchableOpacity
-      onPress={onNewWorkout}
-      className="flex-row items-center gap-1 rounded-full bg-primary/10 px-3 py-1.5">
-      <Plus size={16} className="text-primary" />
-      <Text className="text-xs font-bold text-primary">Novo Treino</Text>
-    </TouchableOpacity>
-  </View>
-));
+      <TouchableOpacity
+        onPress={onNewWorkout}
+        className="flex-row items-center gap-1 rounded-full px-3 py-1.5"
+        style={{ backgroundColor: `${accentColor}15` }}>
+        <Plus size={16} color={accentColor} />
+        <Text className="text-xs font-bold" style={{ color: accentColor }}>
+          Novo Treino
+        </Text>
+      </TouchableOpacity>
+    </View>
+  )
+);
 
-export const DailySummary = memo(({ workouts, isRestDay, onToggleRest }: any) => {
-  if (workouts.length > 0) {
+export const DailySummary = memo(
+  ({ workouts, isRestDay, onToggleRest, accentColor = '#a1a1aa' }: any) => {
+    if (workouts.length > 0) {
+      return (
+        <View className="gap-3">
+          {workouts.map((item: any) => (
+            <WorkoutHistoryItem key={item.id} workout={item} />
+          ))}
+          {isRestDay && (
+            <Text className="mt-2 text-center text-xs text-muted-foreground">
+              * Treino realizado anula o descanso.
+            </Text>
+          )}
+        </View>
+      );
+    }
+
     return (
-      <View className="gap-3">
-        {workouts.map((item: any) => (
-          <WorkoutHistoryItem key={item.id} workout={item} />
-        ))}
-        {isRestDay && (
-          <Text className="mt-2 text-center text-xs text-muted-foreground">
-            * Treino realizado anula o descanso.
-          </Text>
+      <Card
+        className={`items-center justify-center gap-3 border-2 border-dashed p-6 ${
+          isRestDay ? 'border-blue-500/30 bg-blue-500/5' : 'border-muted bg-muted/10'
+        }`}>
+        {isRestDay ? (
+          <>
+            <View className="mb-1 h-12 w-12 items-center justify-center rounded-full bg-blue-500/20">
+              <Coffee size={24} color="#3b82f6" />
+            </View>
+            <Text className="text-lg font-bold text-blue-500">Dia de Descanso</Text>
+            <Text className="text-center text-xs text-muted-foreground">Ofensiva Congelada.</Text>
+            <Button variant="ghost" className="h-8" onPress={onToggleRest}>
+              <Text className="text-xs text-muted-foreground">Cancelar</Text>
+            </Button>
+          </>
+        ) : (
+          <>
+            <Text className="text-center text-sm font-medium text-foreground">
+              Nenhum treino hoje.
+            </Text>
+            <Button
+              variant="outline"
+              className="h-10 w-full flex-row gap-2 bg-background"
+              style={{ borderColor: `${accentColor}40` }}
+              onPress={onToggleRest}>
+              <Coffee size={16} color={accentColor} />
+              <Text className="text-xs font-bold" style={{ color: accentColor }}>
+                Marcar Descanso
+              </Text>
+            </Button>
+          </>
         )}
-      </View>
+      </Card>
     );
   }
+);
 
-  return (
-    <Card
-      className={`items-center justify-center gap-3 border-2 border-dashed p-6 ${isRestDay ? 'border-blue-500/30 bg-blue-500/5' : 'border-muted bg-muted/10'}`}>
-      {isRestDay ? (
-        <>
-          <View className="mb-1 h-12 w-12 items-center justify-center rounded-full bg-blue-500/20">
-            <Coffee size={24} color="#3b82f6" />
-          </View>
-          <Text className="text-lg font-bold text-blue-500">Dia de Descanso</Text>
-          <Text className="text-center text-xs text-muted-foreground">Ofensiva Congelada.</Text>
-          <Button variant="ghost" className="h-8" onPress={onToggleRest}>
-            <Text className="text-xs text-muted-foreground">Cancelar</Text>
-          </Button>
-        </>
-      ) : (
-        <>
-          <Text className="text-center text-sm font-medium text-foreground">
-            Nenhum treino hoje.
-          </Text>
-          <Button
-            variant="outline"
-            className="h-10 w-full flex-row gap-2 border-primary/20 bg-background"
-            onPress={onToggleRest}>
-            <Coffee size={16} className="text-primary" />
-            <Text className="text-xs font-bold text-primary">Marcar Descanso</Text>
-          </Button>
-        </>
-      )}
-    </Card>
-  );
-});
-
-export const StatsOverview = memo(({ user, history, totalSets, tierColor }: any) => {
+export const StatsOverview = memo(({ user, history, totalSets, accentColor = '#a1a1aa' }: any) => {
   return (
     <>
       <Text className="mb-4 text-lg font-bold text-foreground">Visão Geral</Text>
       <View className="mb-6 flex-row flex-wrap gap-3">
         <StatsCard
           icon={Dumbbell}
-          hexColor={tierColor}
+          hexColor={accentColor}
           label="Treinos"
           value={history.length.toString()}
         />
         <StatsCard
           icon={Activity}
-          hexColor={tierColor}
+          hexColor={accentColor}
           label="Volume Total"
           value={totalSets.toString() + ' séries'}
         />
         <StatsCard
           icon={CalendarDays}
-          hexColor={tierColor}
+          hexColor={accentColor}
           label="Último Treino"
           value={history.length > 0 ? dayjs(history[0].date).format('DD/MM') : '--/--'}
         />
         <StatsCard
           icon={TrendingUp}
-          hexColor={tierColor}
+          hexColor={accentColor}
           label="XP Total"
           value={user.totalXp.toString()}
         />
@@ -103,6 +115,7 @@ export const StatsOverview = memo(({ user, history, totalSets, tierColor }: any)
     </>
   );
 });
+
 export const StatsCard = ({ icon: Icon, hexColor, label, value }: any) => (
   <View
     className="min-w-[45%] flex-1 rounded-xl border p-4"

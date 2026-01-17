@@ -7,13 +7,17 @@ import { ArrowLeft, Copy, Share2, ShieldCheck } from 'lucide-react-native';
 import { Text } from '@/components/ui/text';
 import { ThemeToggle } from '@/components/features/theme-toggle';
 
-// IMPORTS DA REFATORAÇÃO
-
-import { ProfileHeader, StatsGrid } from '@/components/profile/profile-components';
+import {
+  ProfileHeader,
+  StatsGrid,
+  ColorThemeSelector,
+} from '@/components/profile/profile-components';
 import { useProfile } from '@/components/profile/useProfile';
 
 export default function ProfileScreen() {
   const { user, name, setName, isEditing, setIsEditing, stats, actions } = useProfile();
+
+  const accentColor = user.accentColor || '#a1a1aa';
 
   return (
     <SafeAreaView className="flex-1 bg-background">
@@ -38,22 +42,26 @@ export default function ProfileScreen() {
           setIsEditing={setIsEditing}
           onSave={actions.handleSaveName}
           onPickImage={actions.handlePickImage}
+          accentColor={accentColor}
         />
 
-        {/* STATS */}
-        <StatsGrid stats={stats} />
+        <StatsGrid stats={stats} accentColor={accentColor} />
 
-        {/* SETTINGS AREA */}
         <View className="mt-8 gap-6 px-6">
           <Text className="text-sm font-bold uppercase text-muted-foreground">Preferências</Text>
 
           <View className="flex-row items-center justify-between rounded-xl border border-border bg-muted/30 p-4">
             <View>
-              <Text className="font-bold text-foreground">Aparência</Text>
-              <Text className="text-xs text-muted-foreground">Alternar modo escuro/claro</Text>
+              <Text className="font-bold text-foreground">Modo Escuro</Text>
+              <Text className="text-xs text-muted-foreground">Alternar tema do sistema</Text>
             </View>
             <ThemeToggle />
           </View>
+
+          <ColorThemeSelector
+            currentColor={accentColor}
+            onSelectColor={actions.handleSetAccentColor}
+          />
 
           <Text className="mt-2 text-sm font-bold uppercase text-muted-foreground">
             Dados & Backup
@@ -62,8 +70,10 @@ export default function ProfileScreen() {
           <TouchableOpacity
             onPress={actions.handleExportData}
             className="flex-row items-center gap-4 rounded-xl border border-border bg-card p-4 active:bg-muted">
-            <View className="h-10 w-10 items-center justify-center rounded-full bg-green-500/10">
-              <Copy size={20} className="text-green-500" />
+            <View
+              className="h-10 w-10 items-center justify-center rounded-full"
+              style={{ backgroundColor: `${accentColor}20` }}>
+              <Copy size={20} color={accentColor} />
             </View>
             <View className="flex-1">
               <Text className="font-bold text-foreground">Copiar Dados (JSON)</Text>
@@ -76,8 +86,10 @@ export default function ProfileScreen() {
             onPress={() =>
               Alert.alert('Em Breve', 'A exportação de arquivo estará disponível na v1.1')
             }>
-            <View className="h-10 w-10 items-center justify-center rounded-full bg-blue-500/10">
-              <Share2 size={20} className="text-blue-500" />
+            <View
+              className="h-10 w-10 items-center justify-center rounded-full"
+              style={{ backgroundColor: `${accentColor}20` }}>
+              <Share2 size={20} color={accentColor} />
             </View>
             <View className="flex-1">
               <Text className="font-bold text-foreground">Exportar Arquivo</Text>
@@ -87,10 +99,8 @@ export default function ProfileScreen() {
             </View>
           </TouchableOpacity>
         </View>
-
-        {/* FOOTER */}
         <View className="mt-12 items-center gap-2">
-          <ShieldCheck size={24} className="text-muted-foreground/30" />
+          <ShieldCheck size={24} color={accentColor} style={{ opacity: 0.5 }} />
           <Text className="text-xs font-medium text-muted-foreground">Iron Streak v1.0.0</Text>
           <Text className="text-[10px] text-muted-foreground/60">
             Built with Expo & React Native

@@ -6,6 +6,7 @@ export interface UserSlice {
   user: UserProfile;
   updateUser: (data: Partial<UserProfile>) => void;
   clearProfileOnly: () => void;
+  setAccentColor: (color: string) => void;
 }
 
 export interface WorkoutSlice {

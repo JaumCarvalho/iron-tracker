@@ -8,11 +8,12 @@ import {
   ChevronDown,
   ChevronUp,
   Trophy,
-  Footprints,
   ChevronRight,
+  Footprints,
 } from 'lucide-react-native';
 import dayjs from 'dayjs';
 import { router } from 'expo-router';
+
 const formatDuration = (seconds: number) => {
   if (!seconds) return '0m';
   const h = Math.floor(seconds / 3600);
@@ -30,6 +31,7 @@ export function WorkoutHistoryItem({ workout }: WorkoutHistoryItemProps) {
 
   const isCardioFocus =
     workout.exercises && workout.exercises.some((ex: any) => ex.group === 'Cardio');
+
   const dateObj = dayjs(workout.date);
 
   return (
@@ -41,7 +43,9 @@ export function WorkoutHistoryItem({ workout }: WorkoutHistoryItemProps) {
         <View className="flex-row items-center justify-between">
           <View className="flex-row items-center gap-3">
             <View
-              className={`h-12 w-12 items-center justify-center rounded-xl border bg-muted/50 ${isCardioFocus ? 'border-pink-500/20' : 'border-primary/20'}`}>
+              className={`h-12 w-12 items-center justify-center rounded-xl border bg-muted/50 ${
+                isCardioFocus ? 'border-blue-500/20' : 'border-primary/20'
+              }`}>
               <Text className="text-xs font-bold uppercase text-muted-foreground">
                 {dateObj.format('MMM')}
               </Text>
@@ -69,9 +73,9 @@ export function WorkoutHistoryItem({ workout }: WorkoutHistoryItemProps) {
 
           <View className="items-end gap-1">
             {isCardioFocus ? (
-              <Footprints size={20} color="#ec4899" />
+              <Footprints size={20} className="text-blue-500" />
             ) : (
-              <Dumbbell size={20} color="#0ea5e9" />
+              <Dumbbell size={20} className="text-primary" />
             )}
             {isExpanded ? (
               <ChevronUp size={16} color="#888" />
@@ -86,11 +90,16 @@ export function WorkoutHistoryItem({ workout }: WorkoutHistoryItemProps) {
         <View className="border-t border-border bg-muted/20 px-4 py-3">
           {workout.exercises.map((ex: any, idx: number) => {
             const isCardio = ex.group === 'Cardio';
-
             let detailsText = '';
+
             if (isCardio) {
-              const set = ex.sets[0];
-              detailsText = `${set.duration || 0} min • ${set.distance || 0} km`;
+              const totalDist = ex.sets.reduce((acc: number, s: any) => acc + (s.distance || 0), 0);
+              const totalTime = ex.sets.reduce(
+                (acc: number, s: any) => acc + (s.manualDuration || 0),
+                0
+              );
+
+              detailsText = `${Number(totalDist).toFixed(1).replace('.0', '')}km • ${totalTime}min`;
             } else {
               const setsCount = ex.sets.length;
               const maxWeight =
@@ -104,7 +113,7 @@ export function WorkoutHistoryItem({ workout }: WorkoutHistoryItemProps) {
                 className="flex-row items-center justify-between border-b border-border/40 py-2 last:border-0">
                 <View className="flex-1 flex-row items-center gap-2">
                   <View
-                    className={`h-8 w-1 rounded-full ${isCardio ? 'bg-pink-500' : 'bg-primary'}`}
+                    className={`h-8 w-1 rounded-full ${isCardio ? 'bg-blue-500' : 'bg-primary'}`}
                   />
 
                   <TouchableOpacity

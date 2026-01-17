@@ -1,11 +1,10 @@
-import React, { useEffect, useState, useCallback, memo, useMemo } from 'react';
+import React, { useState, useCallback, memo, useMemo, useEffect } from 'react';
 import {
   View,
   TouchableOpacity,
-  LayoutChangeEvent,
+  FlatList,
   ActivityIndicator,
   InteractionManager,
-  FlatList,
 } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import {
@@ -29,12 +28,12 @@ import {
   Calendar,
   Dumbbell,
   Activity,
-  Plus,
+  Timer,
+  MapPin,
 } from 'lucide-react-native';
 
-const ITEMS_PER_PAGE = 15;
-
 type TimeRange = '7d' | '30d' | '1y' | 'all';
+const ITEMS_PER_PAGE = 15;
 
 const FilterButton = memo(
   ({
@@ -59,41 +58,6 @@ const FilterButton = memo(
   )
 );
 
-const LogItem = memo(
-  ({ log, themeColor, isAnchor }: { log: any; themeColor: string; isAnchor: boolean }) => {
-    const dateFormatted = dayjs(log.date).format('dddd, DD [de] MMM, YYYY');
-
-    return (
-      <View
-        className={`mb-3 rounded-xl border bg-card p-4 ${isAnchor ? 'border-primary bg-primary/5' : 'border-border/50'}`}>
-        <View className="mb-3 flex-row items-center justify-between">
-          <View className="flex-row items-center gap-2">
-            <View
-              className="h-2 w-2 rounded-full"
-              style={{ backgroundColor: isAnchor ? themeColor : '#71717a' }}
-            />
-            <Text
-              className={`font-bold capitalize ${isAnchor ? 'text-primary' : 'text-foreground'}`}>
-              {dateFormatted} {isAnchor && '(Selecionado)'}
-            </Text>
-          </View>
-          <Text className="text-xs font-medium text-muted-foreground">Max {log.maxWeight}kg</Text>
-        </View>
-
-        <View className="flex-row flex-wrap gap-2">
-          {log.sets.map((set: any, sIdx: number) => (
-            <View key={sIdx} className="rounded border border-border/30 bg-muted/30 px-2 py-1">
-              <Text className="text-xs text-muted-foreground">
-                <Text className="font-bold text-foreground">{set.weight}kg</Text> x {set.reps}
-              </Text>
-            </View>
-          ))}
-        </View>
-      </View>
-    );
-  }
-);
-
 const StatsCard = memo(({ icon: Icon, label, value, color }: any) => (
   <View
     className="min-w-[45%] flex-1 rounded-xl border bg-card p-3"
@@ -106,83 +70,219 @@ const StatsCard = memo(({ icon: Icon, label, value, color }: any) => (
   </View>
 ));
 
-export default function ExerciseDetails() {
-  const { name, anchorDate } = useLocalSearchParams<{ name: string; anchorDate: string }>();
-  const { history, user } = useStore();
-  const [chartWidth, setChartWidth] = useState(0);
+const LogItem = memo(
+  ({ log, themeColor, isCardio }: { log: any; themeColor: string; isCardio: boolean }) => {
+    const dateFormatted = dayjs(log.date).format('dddd, DD [de] MMM, YYYY');
 
-  const [isLoading, setIsLoading] = useState(true);
-  const [filter, setFilter] = useState<TimeRange>('30d');
+    return (
+      <View
+        className={`mb-3 rounded-xl border bg-card p-4 ${log.isAnchor ? 'border-primary bg-primary/5' : 'border-border/50'}`}>
+        <View className="mb-3 flex-row items-center justify-between">
+          <View className="flex-row items-center gap-2">
+            <View
+              className="h-2 w-2 rounded-full"
+              style={{ backgroundColor: log.isAnchor ? themeColor : '#71717a' }}
+            />
+            <Text
+              className={`font-bold capitalize ${log.isAnchor ? 'text-primary' : 'text-foreground'}`}>
+              {dateFormatted} {log.isAnchor && '(Selecionado)'}
+            </Text>
+          </View>
+          <Text className="text-xs font-medium text-muted-foreground">
+            {isCardio ? `Total: ${log.value.toFixed(1)}km` : `Max: ${log.value}kg`}
+          </Text>
+        </View>
 
-  const [baseLogs, setBaseLogs] = useState<any[]>([]);
-  const [group, setGroup] = useState('Geral');
-  const [globalStats, setGlobalStats] = useState<any>(null);
+        <View className="flex-row flex-wrap gap-2">
+          {log.sets.map((set: any, sIdx: number) => (
+            <View
+              key={sIdx}
+              className="flex-row items-center gap-1 rounded border border-border/30 bg-muted/30 px-2 py-1">
+              {isCardio ? (
+                <>
+                  <Text className="font-bold text-foreground">{set.distance || 0}km</Text>
+                  <Text className="text-xs text-muted-foreground">
+                    • {set.manualDuration || 0}m
+                  </Text>
+                </>
+              ) : (
+                <>
+                  <Text className="font-bold text-foreground">{set.weight}kg</Text>
+                  <Text className="text-xs text-muted-foreground">x {set.reps}</Text>
+                </>
+              )}
+            </View>
+          ))}
+        </View>
+      </View>
+    );
+  }
+);
 
-  const [filteredChartData, setFilteredChartData] = useState<any[]>([]);
-  const [visibleLogs, setVisibleLogs] = useState<any[]>([]);
-  const [page, setPage] = useState(1);
-  const [hasMoreLogs, setHasMoreLogs] = useState(false);
+const PerformanceChart = memo(({ data, color, unit, isLoading }: any) => {
+  const [width, setWidth] = useState(0);
 
-  const themeColor = useMemo(() => {
-    const tiers = [
-      { d: 1825, c: '#10b981' },
-      { d: 1095, c: '#ec4899' },
-      { d: 730, c: '#06b6d4' },
-      { d: 365, c: '#fbbf24' },
-      { d: 180, c: '#3b82f6' },
-      { d: 90, c: '#8b5cf6' },
-      { d: 30, c: '#ef4444' },
-      { d: 7, c: '#f97316' },
-      { d: 0, c: '#a1a1aa' },
-    ];
-    return tiers.find((t) => user.streak >= t.d)?.c || '#a1a1aa';
-  }, [user.streak]);
+  if (data.length < 2) {
+    return (
+      <View className="h-40 items-center justify-center rounded-xl border-2 border-dashed border-muted bg-muted/10">
+        <Text className="px-4 text-center text-xs text-muted-foreground">
+          {isLoading ? 'Carregando...' : 'Dados insuficientes para gráfico.'}
+        </Text>
+      </View>
+    );
+  }
+
+  const height = 160;
+  const padding = 20;
+  const chartWidth = width || 300;
+
+  let maxVal = Math.max(...data.map((d: any) => d.value));
+  if (maxVal === 0) maxVal = 10;
+  const minVal = 0;
+
+  const points = data.map((d: any, i: number) => {
+    const x = padding + i * ((chartWidth - padding * 2) / (data.length - 1));
+    const ratio = (d.value - minVal) / (maxVal - minVal);
+    const y = height - ratio * (height - padding) - 10;
+    return { x, y, ...d };
+  });
+
+  const linePath = points
+    .map((p: any, i: number) => (i === 0 ? `M ${p.x} ${p.y}` : `L ${p.x} ${p.y}`))
+    .join(' ');
+
+  return (
+    <View onLayout={(e) => setWidth(e.nativeEvent.layout.width)} className="mt-4">
+      <Svg height={height + 30} width="100%">
+        <Defs>
+          <LinearGradient id="grad" x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0" stopColor={color} stopOpacity="0.4" />
+            <Stop offset="1" stopColor={color} stopOpacity="0" />
+          </LinearGradient>
+        </Defs>
+        <Path
+          d={`${linePath} L ${points[points.length - 1].x} ${height} L ${points[0].x} ${height} Z`}
+          fill="url(#grad)"
+        />
+        <Path d={linePath} stroke={color} strokeWidth="2" fill="transparent" />
+
+        {points.map((p: any, i: number) => {
+          const isSelected = p.isAnchor;
+          const shouldShowDot = isSelected || points.length < 15 || i === points.length - 1;
+          if (!shouldShowDot) return null;
+
+          return (
+            <G key={i} x={p.x} y={p.y}>
+              {isSelected && <Circle r="8" fill={color} opacity={0.3} />}
+              <Circle
+                r={isSelected ? 5 : 3}
+                fill={isSelected ? color : 'white'}
+                stroke={color}
+                strokeWidth={2}
+              />
+              {(isSelected || i === points.length - 1) && (
+                <SvgText
+                  y="-12"
+                  fontSize={isSelected ? '12' : '10'}
+                  fill={color}
+                  textAnchor="middle"
+                  fontWeight="bold">
+                  {p.value}
+                  {unit}
+                </SvgText>
+              )}
+            </G>
+          );
+        })}
+
+        {points.map((p: any, i: number) => {
+          const show =
+            i === 0 ||
+            i === points.length - 1 ||
+            (points.length > 5 && i === Math.floor(points.length / 2));
+          if (!show) return null;
+          return (
+            <SvgText
+              key={i}
+              x={p.x}
+              y={height + 20}
+              fontSize="10"
+              fill="#71717a"
+              textAnchor="middle">
+              {p.dateFormatted}
+            </SvgText>
+          );
+        })}
+      </Svg>
+    </View>
+  );
+});
+
+function useExerciseAnalytics(history: any[], name: string, anchorDate: string) {
+  const [state, setState] = useState({
+    isLoading: true,
+    baseLogs: [] as any[],
+    group: 'Geral',
+    isCardio: false,
+    stats: null as any,
+  });
 
   useEffect(() => {
     const task = InteractionManager.runAfterInteractions(() => {
       if (!history || !name) {
-        setIsLoading(false);
+        setState((s) => ({ ...s, isLoading: false }));
         return;
       }
 
       const logs: any[] = [];
-      let maxWeightAllTime = 0;
-      let maxVolumeAllTime = 0;
-      let totalSetsAllTime = 0;
+      let globalMax = 0;
+      let globalVol = 0;
+      let totalSets = 0;
       let groupName = 'Geral';
+      let isCardio = false;
 
       const limitDate = anchorDate ? dayjs(anchorDate) : dayjs();
 
       for (const workout of history) {
         const wDate = dayjs(workout.date);
-
         if (wDate.isAfter(limitDate, 'day')) continue;
 
         const exercise = workout.exercises.find((ex: any) => ex.name === name);
         if (exercise) {
           groupName = exercise.group || 'Geral';
+          isCardio = groupName === 'Cardio';
 
-          let sessionMax = 0;
+          let sessionVal = 0;
           let sessionVol = 0;
 
-          for (const s of exercise.sets) {
-            const w = Number(s.weight) || 0;
-            const r = Number(s.reps) || 0;
-            if (w > sessionMax) sessionMax = w;
-            sessionVol += w * r;
+          if (isCardio) {
+            sessionVal = exercise.sets.reduce(
+              (acc: number, s: any) => acc + (parseFloat(s.distance) || 0),
+              0
+            );
+            sessionVol = exercise.sets.reduce(
+              (acc: number, s: any) => acc + (parseFloat(s.manualDuration) || 0),
+              0
+            );
+          } else {
+            for (const s of exercise.sets) {
+              const w = Number(s.weight) || 0;
+              const r = Number(s.reps) || 0;
+              if (w > sessionVal) sessionVal = w;
+              sessionVol += w * r;
+            }
           }
 
-          if (sessionMax > maxWeightAllTime) maxWeightAllTime = sessionMax;
-          if (sessionVol > maxVolumeAllTime) maxVolumeAllTime = sessionVol;
-          totalSetsAllTime += exercise.sets.length;
+          if (sessionVal > globalMax) globalMax = sessionVal;
+          globalVol += sessionVol;
+          totalSets += exercise.sets.length;
 
           logs.push({
             date: workout.date,
             rawDateObj: wDate,
             workoutId: workout.id,
-            maxWeight: sessionMax,
+            value: sessionVal,
             sets: exercise.sets,
-
             isAnchor: wDate.isSame(limitDate, 'day'),
           });
         }
@@ -190,239 +290,100 @@ export default function ExerciseDetails() {
 
       logs.sort((a, b) => b.rawDateObj.valueOf() - a.rawDateObj.valueOf());
 
-      setBaseLogs(logs);
-      setGlobalStats({
-        pr: maxWeightAllTime,
-        maxVolume: maxVolumeAllTime,
-        totalSets: totalSetsAllTime,
-        sessions: logs.length,
+      setState({
+        isLoading: false,
+        baseLogs: logs,
+        group: groupName,
+        isCardio,
+        stats: {
+          max: globalMax,
+          vol: globalVol,
+          count: logs.length,
+          sets: totalSets,
+        },
       });
-      setGroup(groupName);
-      setIsLoading(false);
     });
-
     return () => task.cancel();
   }, [history, name, anchorDate]);
 
-  useEffect(() => {
-    if (baseLogs.length === 0) return;
+  return state;
+}
 
-    const limitDate = anchorDate ? dayjs(anchorDate) : dayjs();
-    let cutOffDate = limitDate.clone();
+export default function ExerciseDetails() {
+  const { name, anchorDate } = useLocalSearchParams<{ name: string; anchorDate: string }>();
+  const { history, user } = useStore();
+  const [filter, setFilter] = useState<TimeRange>('30d');
 
-    if (filter === '7d') cutOffDate = cutOffDate.subtract(7, 'day');
-    else if (filter === '30d') cutOffDate = cutOffDate.subtract(30, 'day');
-    else if (filter === '1y') cutOffDate = cutOffDate.subtract(1, 'year');
-    else cutOffDate = dayjs('1900-01-01');
-
-    const logsInPeriod = baseLogs.filter((log) => {
-      return log.rawDateObj.isSame(cutOffDate, 'day') || log.rawDateObj.isAfter(cutOffDate, 'day');
-    });
-
-    const chartPoints = [...logsInPeriod]
-      .sort((a, b) => a.rawDateObj.valueOf() - b.rawDateObj.valueOf())
-      .map((log) => ({
-        dateFormatted: dayjs(log.date).format('DD/MM'),
-        weight: log.maxWeight,
-        isAnchor: log.isAnchor,
-      }));
-
-    setFilteredChartData(chartPoints);
-
-    setPage(1);
-    const initialBatch = logsInPeriod.slice(0, ITEMS_PER_PAGE);
-    setVisibleLogs(initialBatch);
-    setHasMoreLogs(logsInPeriod.length > ITEMS_PER_PAGE);
-  }, [filter, baseLogs, anchorDate]);
-
-  const handleLoadMore = useCallback(() => {
-    const limitDate = anchorDate ? dayjs(anchorDate) : dayjs();
-    let cutOffDate = limitDate.clone();
-    if (filter === '7d') cutOffDate = cutOffDate.subtract(7, 'day');
-    else if (filter === '30d') cutOffDate = cutOffDate.subtract(30, 'day');
-    else if (filter === '1y') cutOffDate = cutOffDate.subtract(1, 'year');
-    else cutOffDate = dayjs('1900-01-01');
-
-    const logsInPeriod = baseLogs.filter(
-      (log) => log.rawDateObj.isSame(cutOffDate, 'day') || log.rawDateObj.isAfter(cutOffDate, 'day')
-    );
-
-    const nextPage = page + 1;
-    const nextBatchEnd = nextPage * ITEMS_PER_PAGE;
-    const nextBatch = logsInPeriod.slice(0, nextBatchEnd);
-
-    setVisibleLogs(nextBatch);
-    setPage(nextPage);
-    setHasMoreLogs(logsInPeriod.length > nextBatchEnd);
-  }, [page, baseLogs, filter, anchorDate]);
-
-  const renderChart = useCallback(() => {
-    if (filteredChartData.length < 2)
-      return (
-        <View className="h-40 items-center justify-center rounded-xl border-2 border-dashed border-muted bg-muted/10">
-          <Text className="px-4 text-center text-xs text-muted-foreground">
-            Poucos dados neste período ({filter.toUpperCase()}).
-          </Text>
-        </View>
-      );
-
-    const height = 160;
-    const padding = 20;
-    const width = chartWidth || 300;
-
-    let maxVal = Math.max(...filteredChartData.map((d) => d.weight));
-    if (maxVal === 0) maxVal = 10;
-    const minVal = 0;
-
-    const points = filteredChartData.map((d, i) => {
-      const x = padding + i * ((width - padding * 2) / (filteredChartData.length - 1));
-      const ratio = (d.weight - minVal) / (maxVal - minVal);
-      const y = height - ratio * (height - padding) - 10;
-      return { x, y, ...d };
-    });
-
-    const linePath = points
-      .map((p, i) => (i === 0 ? `M ${p.x} ${p.y}` : `L ${p.x} ${p.y}`))
-      .join(' ');
-
-    return (
-      <View
-        onLayout={(e: LayoutChangeEvent) => setChartWidth(e.nativeEvent.layout.width)}
-        className="mt-4">
-        <Svg height={height + 30} width="100%">
-          <Defs>
-            <LinearGradient id="grad" x1="0" y1="0" x2="0" y2="1">
-              <Stop offset="0" stopColor={themeColor} stopOpacity="0.4" />
-              <Stop offset="1" stopColor={themeColor} stopOpacity="0" />
-            </LinearGradient>
-          </Defs>
-          <Path
-            d={`${linePath} L ${points[points.length - 1].x} ${height} L ${points[0].x} ${height} Z`}
-            fill="url(#grad)"
-          />
-          <Path d={linePath} stroke={themeColor} strokeWidth="2" fill="transparent" />
-
-          {points.map((p, i) => {
-            const isSelected = p.isAnchor;
-            const shouldShowDot = isSelected || points.length < 15 || i === points.length - 1;
-
-            if (!shouldShowDot) return null;
-
-            return (
-              <G key={i} x={p.x} y={p.y}>
-                {isSelected && <Circle r="8" fill={themeColor} opacity={0.3} />}
-                <Circle
-                  r={isSelected ? 5 : 3}
-                  fill={isSelected ? themeColor : 'white'}
-                  stroke={themeColor}
-                  strokeWidth={2}
-                />
-                {(isSelected || i === points.length - 1) && (
-                  <SvgText
-                    y="-12"
-                    fontSize={isSelected ? '12' : '10'}
-                    fill={themeColor}
-                    textAnchor="middle"
-                    fontWeight="bold">
-                    {p.weight}kg
-                  </SvgText>
-                )}
-              </G>
-            );
-          })}
-
-          {points.map((p, i) => {
-            const show =
-              i === 0 ||
-              i === points.length - 1 ||
-              (points.length > 5 && i === Math.floor(points.length / 2));
-            if (!show) return null;
-            return (
-              <SvgText
-                key={i}
-                x={p.x}
-                y={height + 20}
-                fontSize="10"
-                fill="#71717a"
-                textAnchor="middle">
-                {p.dateFormatted}
-              </SvgText>
-            );
-          })}
-        </Svg>
-      </View>
-    );
-  }, [filteredChartData, chartWidth, themeColor, filter]);
-
-  const ListHeader = useCallback(
-    () => (
-      <View className="mb-4">
-        <View className="mb-4 flex-row justify-end gap-2 self-end rounded-lg bg-muted/20 p-1">
-          <FilterButton label="7D" value="7d" current={filter} onPress={setFilter} />
-          <FilterButton label="30D" value="30d" current={filter} onPress={setFilter} />
-          <FilterButton label="1 Ano" value="1y" current={filter} onPress={setFilter} />
-          <FilterButton label="Tudo" value="all" current={filter} onPress={setFilter} />
-        </View>
-
-        {/* Gráfico */}
-        <Card className="mb-6 border-border/50 bg-card/50">
-          <CardHeader className="pb-0">
-            <View className="flex-row items-center gap-2">
-              <TrendingUp size={18} color={themeColor} />
-              <Text className="text-base font-bold text-foreground">
-                Evolução até {anchorDate ? dayjs(anchorDate).format('DD/MM') : 'hoje'}
-              </Text>
-            </View>
-          </CardHeader>
-          <CardContent>{renderChart()}</CardContent>
-        </Card>
-
-        {/* Stats */}
-        <View className="mb-6 flex-row flex-wrap gap-3">
-          <StatsCard
-            icon={Trophy}
-            label="Recorde (PR)"
-            value={`${globalStats?.pr || 0}kg`}
-            color={themeColor}
-          />
-          <StatsCard
-            icon={Activity}
-            label="Vol. Máximo"
-            value={`${globalStats?.maxVolume || 0}kg`}
-            color={themeColor}
-          />
-          <StatsCard
-            icon={Calendar}
-            label="Sessões"
-            value={globalStats?.sessions || 0}
-            color={themeColor}
-          />
-          <StatsCard
-            icon={Dumbbell}
-            label="Total Séries"
-            value={globalStats?.totalSets || 0}
-            color={themeColor}
-          />
-        </View>
-
-        <Text className="mb-2 text-lg font-bold text-foreground">Histórico do Período</Text>
-      </View>
-    ),
-    [filter, renderChart, globalStats, themeColor, anchorDate]
+  const { baseLogs, group, isCardio, stats, isLoading } = useExerciseAnalytics(
+    history,
+    name,
+    anchorDate
   );
 
-  const ListFooter = useCallback(() => {
-    if (!hasMoreLogs) return <View className="h-8" />;
+  const [visibleLogs, setVisibleLogs] = useState<any[]>([]);
+  const [chartData, setChartData] = useState<any[]>([]);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
 
-    return (
-      <TouchableOpacity
-        onPress={handleLoadMore}
-        className="my-4 flex-row items-center justify-center rounded-xl border border-border bg-muted/20 p-3 active:bg-muted/40">
-        <Plus size={16} className="mr-2 text-muted-foreground" />
-        <Text className="text-sm font-bold text-muted-foreground">Carregar mais 15 sessões</Text>
-      </TouchableOpacity>
+  useEffect(() => {
+    if (isLoading || baseLogs.length === 0) return;
+
+    const limit = anchorDate ? dayjs(anchorDate) : dayjs();
+    let cutOff = limit.clone();
+    if (filter === '7d') cutOff = cutOff.subtract(7, 'day');
+    else if (filter === '30d') cutOff = cutOff.subtract(30, 'day');
+    else if (filter === '1y') cutOff = cutOff.subtract(1, 'year');
+    else cutOff = dayjs('1900-01-01');
+
+    const filtered = baseLogs.filter(
+      (log) => log.rawDateObj.isSame(cutOff, 'day') || log.rawDateObj.isAfter(cutOff, 'day')
     );
-  }, [hasMoreLogs, handleLoadMore]);
+
+    const chart = [...filtered]
+      .sort((a, b) => a.rawDateObj.valueOf() - b.rawDateObj.valueOf())
+      .map((log) => ({
+        value: log.value,
+        dateFormatted: dayjs(log.date).format('DD/MM'),
+        isAnchor: log.isAnchor,
+      }));
+    setChartData(chart);
+
+    setPage(1);
+    const batch = filtered.slice(0, ITEMS_PER_PAGE);
+    setVisibleLogs(batch);
+    setHasMore(filtered.length > ITEMS_PER_PAGE);
+  }, [baseLogs, filter, isLoading, anchorDate]);
+
+  const loadMore = useCallback(() => {
+    if (!hasMore) return;
+    const nextPage = page + 1;
+    const allFiltered = baseLogs;
+
+    const limit = anchorDate ? dayjs(anchorDate) : dayjs();
+    let cutOff = limit.clone();
+    if (filter === '7d') cutOff = cutOff.subtract(7, 'day');
+    else if (filter === '30d') cutOff = cutOff.subtract(30, 'day');
+    else if (filter === '1y') cutOff = cutOff.subtract(1, 'year');
+    else cutOff = dayjs('1900-01-01');
+
+    const filtered = baseLogs.filter(
+      (log) => log.rawDateObj.isSame(cutOff, 'day') || log.rawDateObj.isAfter(cutOff, 'day')
+    );
+    const end = nextPage * ITEMS_PER_PAGE;
+    setVisibleLogs(filtered.slice(0, end));
+    setPage(nextPage);
+    setHasMore(filtered.length > end);
+  }, [page, hasMore, baseLogs, filter, anchorDate]);
+
+  const themeColor = useMemo(() => {
+    if (isCardio) return '#3b82f6';
+    const tiers = [
+      { d: 1825, c: '#10b981' },
+      { d: 365, c: '#fbbf24' },
+      { d: 0, c: '#a1a1aa' },
+    ];
+    return tiers.find((t) => user.streak >= t.d)?.c || '#a1a1aa';
+  }, [user.streak, isCardio]);
 
   if (isLoading) {
     return (
@@ -452,14 +413,80 @@ export default function ExerciseDetails() {
         data={visibleLogs}
         keyExtractor={(item) => item.workoutId}
         renderItem={({ item }) => (
-          <LogItem log={item} themeColor={themeColor} isAnchor={item.isAnchor} />
+          <LogItem log={item} themeColor={themeColor} isCardio={isCardio} />
         )}
-        ListHeaderComponent={ListHeader}
-        ListFooterComponent={ListFooter}
+        onEndReached={loadMore}
+        onEndReachedThreshold={0.5}
         contentContainerStyle={{ padding: 16, paddingBottom: 50 }}
-        initialNumToRender={8}
-        removeClippedSubviews={true}
-        windowSize={5}
+        ListHeaderComponent={
+          <View className="mb-4">
+            <View className="mb-4 flex-row justify-end gap-2 self-end rounded-lg bg-muted/20 p-1">
+              {(['7d', '30d', '1y', 'all'] as TimeRange[]).map((r) => (
+                <FilterButton
+                  key={r}
+                  label={r === 'all' ? 'Tudo' : r.toUpperCase()}
+                  value={r}
+                  current={filter}
+                  onPress={setFilter}
+                />
+              ))}
+            </View>
+
+            <Card className="mb-6 border-border/50 bg-card/50">
+              <CardHeader className="flex-row items-center gap-2 pb-0">
+                <TrendingUp size={18} color={themeColor} />
+                <Text className="text-base font-bold text-foreground">
+                  {isCardio ? 'Evolução de Distância' : 'Evolução de Carga'}
+                </Text>
+              </CardHeader>
+              <CardContent>
+                <PerformanceChart
+                  data={chartData}
+                  color={themeColor}
+                  unit={isCardio ? 'km' : 'kg'}
+                  isLoading={isLoading}
+                />
+              </CardContent>
+            </Card>
+
+            <View className="mb-6 flex-row flex-wrap gap-3">
+              <StatsCard
+                icon={Trophy}
+                label={isCardio ? 'Maior Distância' : 'Recorde (PR)'}
+                value={`${stats?.max || 0}${isCardio ? 'km' : 'kg'}`}
+                color={themeColor}
+              />
+              <StatsCard
+                icon={isCardio ? Timer : Activity}
+                label={isCardio ? 'Tempo Total' : 'Vol. Máximo'}
+                value={isCardio ? `${(stats?.vol || 0).toFixed(0)}min` : `${stats?.vol || 0}kg`}
+                color={themeColor}
+              />
+              <StatsCard
+                icon={Calendar}
+                label="Sessões"
+                value={stats?.count || 0}
+                color={themeColor}
+              />
+              <StatsCard
+                icon={isCardio ? MapPin : Dumbbell}
+                label={isCardio ? 'Dist. Total' : 'Total Séries'}
+                value={isCardio ? `${stats?.max * stats?.count || 0}km` : stats?.sets || 0}
+                color={themeColor}
+              />
+            </View>
+            <Text className="mb-2 text-lg font-bold text-foreground">Histórico</Text>
+          </View>
+        }
+        ListFooterComponent={
+          hasMore ? (
+            <View className="py-4">
+              <ActivityIndicator color={themeColor} />
+            </View>
+          ) : (
+            <View className="h-8" />
+          )
+        }
       />
     </View>
   );

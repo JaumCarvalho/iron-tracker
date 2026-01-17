@@ -9,14 +9,18 @@ import { ThemeToggle } from '@/components/features/theme-toggle';
 import { router } from 'expo-router';
 import { STREAK_TIERS } from '@/lib/constants';
 import { WeekCalendar } from '@/components/features/week-calendar';
+import { Flame, Snowflake } from 'lucide-react-native';
 
 interface UserHeaderProps {
   selectedDate: dayjs.Dayjs;
   onSelectDate: (date: dayjs.Dayjs) => void;
+  restDays?: string[];
 }
 
-export function UserHeader({ selectedDate, onSelectDate }: UserHeaderProps) {
+export function UserHeader({ selectedDate, onSelectDate, restDays }: UserHeaderProps) {
   const { user } = useStore();
+
+  const userThemeColor = user.accentColor || '#a1a1aa';
 
   const currentTier = useMemo(() => {
     return STREAK_TIERS.find((t) => user.streak >= t.days) || STREAK_TIERS[STREAK_TIERS.length - 1];
@@ -28,9 +32,65 @@ export function UserHeader({ selectedDate, onSelectDate }: UserHeaderProps) {
       .find((t) => t.days > user.streak);
   }, [user.streak]);
 
-  const IconComponent = currentTier.icon;
   const xpCurrentLevel = user.totalXp % 1000;
   const progressPercentage = (xpCurrentLevel / 1000) * 100;
+
+  const streakStyles = useMemo(() => {
+    const todayStr = dayjs().format('YYYY-MM-DD');
+    const isFrozen = restDays?.includes(todayStr);
+    const s = user.streak;
+
+    if (isFrozen) {
+      return {
+        primary: '#3b82f6',
+        bg: '#3b82f610',
+        border: '#3b82f6',
+        icon: Snowflake,
+        label: 'Congelada',
+      };
+    }
+
+    if (s === 0) {
+      return {
+        primary: '#71717a',
+        bg: 'transparent',
+        border: '#e4e4e7',
+        icon: currentTier.icon,
+        label: currentTier.label,
+      };
+    }
+
+    if (s >= 7) {
+      return {
+        primary: '#ea580c',
+        bg: '#ea580c10',
+        border: '#ea580c',
+        icon: Flame,
+        label: currentTier.label,
+      };
+    }
+
+    const orangeScale = [
+      '#a1a1aa',
+      '#fdba74',
+      '#fdba74',
+      '#fb923c',
+      '#fb923c',
+      '#f97316',
+      '#f97316',
+    ];
+    const color = orangeScale[s] || '#f97316';
+
+    return {
+      primary: color,
+      bg: `${color}10`,
+      border: color,
+      icon: Flame,
+      label: currentTier.label,
+    };
+  }, [user.streak, restDays, currentTier]);
+
+  const StatusIcon = streakStyles.icon;
 
   return (
     <View>
@@ -40,8 +100,8 @@ export function UserHeader({ selectedDate, onSelectDate }: UserHeaderProps) {
             <View
               className="h-[52px] w-[52px] items-center justify-center rounded-full p-[3px]"
               style={{
-                backgroundColor: currentTier.color,
-                shadowColor: currentTier.color,
+                backgroundColor: userThemeColor,
+                shadowColor: userThemeColor,
                 shadowOffset: { width: 0, height: 0 },
                 shadowOpacity: 0.6,
                 shadowRadius: 8,
@@ -72,11 +132,21 @@ export function UserHeader({ selectedDate, onSelectDate }: UserHeaderProps) {
       </View>
 
       <View className="mb-4 gap-4">
-        <View className="rounded-xl border border-border bg-card p-4 shadow-sm">
+        <View
+          className="rounded-xl p-4"
+          style={{
+            borderWidth: 1,
+            borderColor: streakStyles.border,
+            backgroundColor: streakStyles.bg,
+          }}>
           <View className="mb-4 flex-row items-center justify-between">
             <View className="flex-row items-center gap-3">
-              <View className={`rounded-full p-2.5 ${currentTier.bgLight} ${currentTier.bgDark}`}>
-                <IconComponent size={24} color={currentTier.color} fill={currentTier.color} />
+              <View
+                className="rounded-full p-2.5"
+                style={{
+                  backgroundColor: user.streak === 0 ? '#f4f4f5' : `${streakStyles.primary}20`,
+                }}>
+                <StatusIcon size={24} color={streakStyles.primary} fill={streakStyles.primary} />
               </View>
 
               <View>
@@ -84,27 +154,30 @@ export function UserHeader({ selectedDate, onSelectDate }: UserHeaderProps) {
                   {user.streak}{' '}
                   <Text className="text-sm font-normal text-muted-foreground">dias seguidos</Text>
                 </Text>
-                <Text className="text-xs font-bold" style={{ color: currentTier.color }}>
-                  {currentTier.label}{' '}
-                  {nextTier ? `• Faltam ${nextTier.days - user.streak} para subir` : ''}
+                <Text className="text-xs font-bold" style={{ color: streakStyles.primary }}>
+                  {streakStyles.label}{' '}
+                  {!restDays?.includes(dayjs().format('YYYY-MM-DD')) && nextTier
+                    ? `• Faltam ${nextTier.days - user.streak} para subir`
+                    : ''}
                 </Text>
               </View>
             </View>
           </View>
 
-          <Separator className="mb-4" />
+          <Separator className="mb-4 bg-border/50" />
 
           <WeekCalendar
             selectedDate={selectedDate}
             onSelectDate={onSelectDate}
-            tierColor={currentTier.color}
+            tierColor={streakStyles.primary}
+            restDays={restDays}
           />
         </View>
 
         <View className="gap-2 px-1">
           <View className="flex-row justify-between">
             <Text className="text-xs font-medium text-muted-foreground">Nível {user.level}</Text>
-            <Text className="text-xs font-bold" style={{ color: currentTier.color }}>
+            <Text className="text-xs font-bold" style={{ color: userThemeColor }}>
               {Math.floor(progressPercentage)}%
             </Text>
           </View>
@@ -112,7 +185,7 @@ export function UserHeader({ selectedDate, onSelectDate }: UserHeaderProps) {
           <View className="h-2.5 overflow-hidden rounded-full bg-muted">
             <View
               className="h-full rounded-full"
-              style={{ width: `${progressPercentage}%`, backgroundColor: currentTier.color }}
+              style={{ width: `${progressPercentage}%`, backgroundColor: userThemeColor }}
             />
           </View>
 

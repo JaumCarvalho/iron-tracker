@@ -1,25 +1,28 @@
-import { useState, useMemo, useCallback } from 'react';
-import { useRouter, useFocusEffect } from 'expo-router';
+import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
+import { useRouter } from 'expo-router';
 import dayjs from 'dayjs';
 import 'dayjs/locale/pt-br';
 
 import { useStore } from '@/store/useStore';
-import { STREAK_TIERS } from '@/lib/constants';
 
 dayjs.locale('pt-br');
 
 export function useDashboard() {
   const router = useRouter();
   const { user, history, restDays, toggleRestDay, resetData, seedData } = useStore();
+  const tierColor = user.accentColor || '#a1a1aa';
   const [selectedDate, setSelectedDate] = useState(dayjs());
 
-  useFocusEffect(useCallback(() => {}, [history, restDays]));
+  const [optimisticRestState, setOptimisticRestState] = useState<boolean | null>(null);
 
-  const tierColor = useMemo(() => {
-    const tier =
-      STREAK_TIERS.find((t) => user.streak >= t.days) || STREAK_TIERS[STREAK_TIERS.length - 1];
-    return tier.color;
-  }, [user.streak]);
+  const timeoutRef = useRef<any>(null);
+
+  const isRestDayRealRef = useRef(false);
+
+  useEffect(() => {
+    setOptimisticRestState(null);
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+  }, [selectedDate]);
 
   const totalSets = useMemo(() => {
     return history.reduce((acc, session) => {
@@ -28,33 +31,70 @@ export function useDashboard() {
   }, [history]);
 
   const filteredWorkouts = useMemo(() => {
-    const targetDate = selectedDate.format('YYYY-MM-DD');
-    return history.filter((workout) => workout.date.startsWith(targetDate));
+    return history.filter((workout) => {
+      if (!workout.date) return false;
+      return dayjs(workout.date).isSame(selectedDate, 'day');
+    });
   }, [selectedDate, history]);
 
-  const isRestDay = useMemo(() => {
-    const targetDate = selectedDate.format('YYYY-MM-DD');
-    return restDays.includes(targetDate);
+  const isRestDayReal = useMemo(() => {
+    const targetDateStr = selectedDate.format('YYYY-MM-DD');
+    const isRest = restDays.includes(targetDateStr);
+    isRestDayRealRef.current = isRest;
+    return isRest;
   }, [selectedDate, restDays]);
 
-  const isToday = selectedDate.isSame(dayjs(), 'day');
+  const isRestDay = optimisticRestState !== null ? optimisticRestState : isRestDayReal;
 
-  const handleToggleRest = () => toggleRestDay(selectedDate.toISOString());
+  const effectiveRestDays = useMemo(() => {
+    if (optimisticRestState === null) return restDays;
 
-  const handleNewWorkout = () => router.push('/workout/routines');
+    const targetDateStr = selectedDate.format('YYYY-MM-DD');
+    if (optimisticRestState === true) {
+      return restDays.includes(targetDateStr) ? restDays : [...restDays, targetDateStr];
+    } else {
+      return restDays.filter((d) => d !== targetDateStr);
+    }
+  }, [restDays, optimisticRestState, selectedDate]);
+
+  const isToday = useMemo(() => selectedDate.isSame(dayjs(), 'day'), [selectedDate]);
+
+  const handleToggleRest = useCallback(() => {
+    const dateStr = selectedDate.format('YYYY-MM-DD');
+
+    const currentState =
+      optimisticRestState !== null ? optimisticRestState : isRestDayRealRef.current;
+    const newState = !currentState;
+
+    setOptimisticRestState(newState);
+
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+
+    timeoutRef.current = setTimeout(() => {
+      if (newState !== isRestDayRealRef.current) {
+        toggleRestDay(dateStr);
+      }
+      setOptimisticRestState(null);
+    }, 600);
+  }, [selectedDate, optimisticRestState, toggleRestDay]);
+
+  const handleNewWorkout = useCallback(() => {
+    router.push('/workout/routines');
+  }, [router]);
 
   return {
     user,
     history,
     selectedDate,
     setSelectedDate,
-
     tierColor,
     totalSets,
     filteredWorkouts,
     isRestDay,
+    effectiveRestDays,
     isToday,
-
     actions: {
       handleToggleRest,
       handleNewWorkout,

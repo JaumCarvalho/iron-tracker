@@ -5,7 +5,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useStore } from '@/store/useStore';
 
 export function useProfile() {
-  const { user, updateUser, history, restDays } = useStore();
+  const { user, updateUser, history, restDays, setAccentColor } = useStore();
 
   const [name, setName] = useState(user.name);
   const [isEditing, setIsEditing] = useState(false);
@@ -64,6 +64,7 @@ export function useProfile() {
       handleSaveName,
       handleExportData,
       handlePickImage,
+      handleSetAccentColor: setAccentColor,
     },
   };
 }
