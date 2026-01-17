@@ -15,8 +15,15 @@ export default function NewWorkoutScreen() {
   const router = useRouter();
   const { templateId } = useLocalSearchParams();
 
-  const { exercises, startTime, globalStatus, isSelectorOpen, setIsSelectorOpen, actions } =
-    useActiveWorkout(templateId);
+  const {
+    exercises,
+    startTime,
+    isFinished,
+    globalStatus,
+    isSelectorOpen,
+    setIsSelectorOpen,
+    actions,
+  } = useActiveWorkout(templateId);
 
   return (
     <SafeAreaView className="flex-1 bg-background">
@@ -33,7 +40,7 @@ export default function NewWorkoutScreen() {
           <ArrowLeft size={20} className="text-foreground" />
         </TouchableOpacity>
 
-        <WorkoutTimer startTime={startTime} status={globalStatus} />
+        <WorkoutTimer startTime={startTime} status={globalStatus} isFinished={isFinished} />
 
         <Button
           size="sm"

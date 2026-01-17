@@ -1,13 +1,18 @@
-// types/active-workout.ts
 export type SetStatus = 'idle' | 'working' | 'completed';
 
 export interface ActiveSet {
   id: string;
+
   weight: string;
   reps: string;
+
+  distance?: string;
+  duration?: string;
+
   status: SetStatus;
   targetReps?: string;
   isExtra?: boolean;
+
   startedAt?: string;
   completedAt?: string;
   durationSeconds?: number;
@@ -20,4 +25,5 @@ export interface ActiveExercise {
   group: string;
   sets: ActiveSet[];
   isExtra?: boolean;
+  originalSetCount?: number;
 }

@@ -6,15 +6,12 @@ import * as React from 'react';
 import { useColorScheme } from 'nativewind';
 import { NAV_THEME } from '@/lib/theme';
 import * as SystemUI from 'expo-system-ui';
-
-import * as SplashScreen from 'expo-splash-screen';
-SplashScreen.preventAutoHideAsync();
-
-export { ErrorBoundary } from 'expo-router';
-
-export const unstable_settings = {
-  initialRouteName: '(tabs)',
-};
+import Animated, {
+  useAnimatedStyle,
+  withTiming,
+  interpolateColor,
+  useDerivedValue,
+} from 'react-native-reanimated';
 
 export default function RootLayout() {
   const { colorScheme } = useColorScheme();
@@ -22,6 +19,15 @@ export default function RootLayout() {
 
   const bgDark = NAV_THEME.dark.colors.background;
   const bgLight = NAV_THEME.light.colors.background;
+
+  const progress = useDerivedValue(() => {
+    return withTiming(isDark ? 1 : 0, { duration: 500 });
+  }, [isDark]);
+
+  const animatedBackgroundStyle = useAnimatedStyle(() => {
+    const backgroundColor = interpolateColor(progress.value, [0, 1], [bgLight, bgDark]);
+    return { backgroundColor };
+  });
 
   React.useEffect(() => {
     SystemUI.setBackgroundColorAsync(isDark ? bgDark : bgLight);
@@ -41,29 +47,31 @@ export default function RootLayout() {
     <ThemeProvider value={isDark ? DARK_THEME : LIGHT_THEME}>
       <StatusBar style={isDark ? 'light' : 'dark'} />
 
-      <Stack
-        screenOptions={{
-          headerShown: false,
-          animation: 'default',
-          contentStyle: { backgroundColor: isDark ? bgDark : bgLight },
-        }}>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-
-        <Stack.Screen
-          name="workout/new"
-          options={{
-            presentation: 'modal',
+      <Animated.View style={[{ flex: 1 }, animatedBackgroundStyle]}>
+        <Stack
+          screenOptions={{
             headerShown: false,
-            gestureEnabled: true,
-          }}
-        />
+            animation: 'default',
+            contentStyle: { backgroundColor: 'transparent' },
+          }}>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
 
-        <Stack.Screen name="workout/routines" options={{ headerShown: false }} />
-        <Stack.Screen name="workout/editor" options={{ headerShown: false }} />
+          <Stack.Screen
+            name="workout/new"
+            options={{
+              presentation: 'modal',
+              headerShown: false,
+              gestureEnabled: true,
+              contentStyle: { backgroundColor: isDark ? bgDark : bgLight },
+            }}
+          />
 
-        <Stack.Screen name="analytics/exercise-details" options={{ headerShown: false }} />
-        <Stack.Screen name="profile/index" options={{ headerShown: false }} />
-      </Stack>
+          <Stack.Screen name="workout/routines" options={{ headerShown: false }} />
+          <Stack.Screen name="workout/editor" options={{ headerShown: false }} />
+          <Stack.Screen name="analytics/exercise-details" options={{ headerShown: false }} />
+          <Stack.Screen name="profile/index" options={{ headerShown: false }} />
+        </Stack>
+      </Animated.View>
     </ThemeProvider>
   );
 }

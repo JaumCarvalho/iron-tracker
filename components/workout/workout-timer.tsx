@@ -1,32 +1,32 @@
 import React, { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { Text } from '@/components/ui/text';
-import { Timer } from 'lucide-react-native';
+import { Timer, Dumbbell, Moon } from 'lucide-react-native';
 
 interface WorkoutTimerProps {
   startTime: string | null;
   status: 'idle' | 'training' | 'resting';
+  isFinished?: boolean;
 }
 
-export function WorkoutTimer({ startTime, status }: WorkoutTimerProps) {
+export function WorkoutTimer({ startTime, status, isFinished }: WorkoutTimerProps) {
   const [elapsed, setElapsed] = useState(0);
 
   useEffect(() => {
     let interval: any;
 
-    if (startTime) {
+    if (startTime && !isFinished) {
       const start = new Date(startTime).getTime();
-
       interval = setInterval(() => {
         const now = new Date().getTime();
         setElapsed(Math.floor((now - start) / 1000));
       }, 1000);
-    } else {
+    } else if (!startTime) {
       setElapsed(0);
     }
 
     return () => clearInterval(interval);
-  }, [startTime]);
+  }, [startTime, isFinished]);
 
   const formatTime = (seconds: number) => {
     const hrs = Math.floor(seconds / 3600);
@@ -40,6 +40,10 @@ export function WorkoutTimer({ startTime, status }: WorkoutTimerProps) {
   return (
     <View className="items-center">
       <View className="mb-1 flex-row items-center gap-1">
+        {status === 'training' && <Dumbbell size={12} className="text-primary" />}
+        {status === 'resting' && <Moon size={12} className="text-blue-400" />}
+        {status === 'idle' && <Timer size={12} className="text-muted-foreground" />}
+
         <Text className="text-[10px] font-bold uppercase text-muted-foreground">
           {status === 'idle' ? 'Pronto' : status === 'training' ? 'Treinando' : 'Descanso'}
         </Text>
