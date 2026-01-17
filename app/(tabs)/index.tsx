@@ -54,21 +54,6 @@ export default function Dashboard() {
 
         <StatsOverview user={user} history={history} totalSets={totalSets} tierColor={tierColor} />
 
-        <View className="-mt-3 mb-6 flex-row flex-wrap gap-3">
-          <StatsCard
-            icon={CalendarDays}
-            hexColor={tierColor}
-            label="Último Treino"
-            value={history.length > 0 ? dayjs(history[0].date).format('DD/MM') : '--/--'}
-          />
-          <StatsCard
-            icon={TrendingUp}
-            hexColor={tierColor}
-            label="XP Total"
-            value={user.totalXp.toString()}
-          />
-        </View>
-
         <View className="mb-8 gap-6">
           <MuscleDistribution />
           <CardioAnalysis />
