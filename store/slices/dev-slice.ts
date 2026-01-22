@@ -33,6 +33,8 @@ export const createDevSlice: StateCreator<AppState, [], [], DevSlice> = (set, ge
   },
 
   seedData: (daysToSimulate = 365) => {
+    const currentAccentColor = get().user.accentColor || '#09090b';
+
     const today = dayjs();
     const history: any[] = [];
     const dietLog: any = {};
@@ -167,7 +169,7 @@ export const createDevSlice: StateCreator<AppState, [], [], DevSlice> = (set, ge
         level: Math.floor(totalXp / 1000) + 1,
         totalXp: totalXp,
         avatarUri: undefined,
-        accentColor: '#ea580c',
+        accentColor: currentAccentColor,
       },
       history,
       dietLog,
