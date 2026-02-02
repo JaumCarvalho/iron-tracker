@@ -85,7 +85,7 @@ const LogItem = memo(
             />
             <Text
               className={`font-bold capitalize ${log.isAnchor ? 'text-primary' : 'text-foreground'}`}>
-              {dateFormatted} {log.isAnchor && '(Selecionado)'}
+              {dateFormatted} {log.isAnchor}
             </Text>
           </View>
           <Text className="text-xs font-medium text-muted-foreground">
