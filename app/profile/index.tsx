@@ -2,6 +2,7 @@ import React from 'react';
 import { View, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, Stack } from 'expo-router';
+import { useColorScheme } from 'nativewind';
 import { ArrowLeft, Copy, Share2, ShieldCheck } from 'lucide-react-native';
 
 import { Text } from '@/components/ui/text';
@@ -16,6 +17,9 @@ import { useProfile } from '@/components/profile/useProfile';
 
 export default function ProfileScreen() {
   const { user, name, setName, isEditing, setIsEditing, stats, actions } = useProfile();
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === 'dark';
+  const iconColor = isDark ? '#fafafa' : '#09090b';
 
   const accentColor = user.accentColor || '#a1a1aa';
 
@@ -28,7 +32,7 @@ export default function ProfileScreen() {
           <TouchableOpacity
             onPress={() => router.back()}
             className="h-10 w-10 items-center justify-center rounded-full bg-muted/50">
-            <ArrowLeft size={20} className="text-foreground" />
+            <ArrowLeft size={20} color={iconColor} />
           </TouchableOpacity>
           <Text className="text-lg font-bold text-foreground">Perfil & Ajustes</Text>
           <View className="w-10" />
