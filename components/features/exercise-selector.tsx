@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Modal, FlatList, TouchableOpacity, SafeAreaView } from 'react-native';
+import { View, Modal, FlatList, TouchableOpacity } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useColorScheme } from 'nativewind';
 import { X, ChevronRight, ArrowLeft, Dumbbell, Plus } from 'lucide-react-native';
 import { Text } from '@/components/ui/text';
