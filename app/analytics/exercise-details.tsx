@@ -7,6 +7,7 @@ import {
   InteractionManager,
 } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
+import { useColorScheme } from 'nativewind';
 import {
   Svg,
   Path,
@@ -143,7 +144,7 @@ const PerformanceChart = memo(({ data, color, unit, isLoading }: any) => {
   const points = data.map((d: any, i: number) => {
     const x = padding + i * ((chartWidth - padding * 2) / (data.length - 1));
     const ratio = (d.value - minVal) / (maxVal - minVal);
-    const y = height - ratio * (height - padding) - 10;
+    const y = 20 + (1 - ratio) * (height - 60); // Mais espaço embaixo para os labels
     return { x, y, ...d };
   });
 
@@ -151,9 +152,11 @@ const PerformanceChart = memo(({ data, color, unit, isLoading }: any) => {
     .map((p: any, i: number) => (i === 0 ? `M ${p.x} ${p.y}` : `L ${p.x} ${p.y}`))
     .join(' ');
 
+  const bottomY = height - 20;
+
   return (
     <View onLayout={(e) => setWidth(e.nativeEvent.layout.width)} className="mt-4">
-      <Svg height={height + 30} width="100%">
+      <Svg height={height + 50} width="100%">
         <Defs>
           <LinearGradient id="grad" x1="0" y1="0" x2="0" y2="1">
             <Stop offset="0" stopColor={color} stopOpacity="0.4" />
@@ -161,7 +164,7 @@ const PerformanceChart = memo(({ data, color, unit, isLoading }: any) => {
           </LinearGradient>
         </Defs>
         <Path
-          d={`${linePath} L ${points[points.length - 1].x} ${height} L ${points[0].x} ${height} Z`}
+          d={`${linePath} L ${points[points.length - 1].x} ${bottomY} L ${points[0].x} ${bottomY} Z`}
           fill="url(#grad)"
         />
         <Path d={linePath} stroke={color} strokeWidth="2" fill="transparent" />
@@ -181,15 +184,19 @@ const PerformanceChart = memo(({ data, color, unit, isLoading }: any) => {
                 strokeWidth={2}
               />
               {(isSelected || i === points.length - 1) && (
-                <SvgText
-                  y="-12"
-                  fontSize={isSelected ? '12' : '10'}
-                  fill={color}
-                  textAnchor="middle"
-                  fontWeight="bold">
-                  {p.value}
-                  {unit}
-                </SvgText>
+                <G>
+                  <SvgText
+                    y="18"
+                    fontSize={isSelected ? '12' : '10'}
+                    fill={color}
+                    textAnchor="middle"
+                    fontWeight="bold">
+                    {p.value}
+                  </SvgText>
+                  <SvgText y="30" fontSize="9" fill={color} textAnchor="middle" opacity={0.7}>
+                    {unit}
+                  </SvgText>
+                </G>
               )}
             </G>
           );
@@ -205,7 +212,7 @@ const PerformanceChart = memo(({ data, color, unit, isLoading }: any) => {
             <SvgText
               key={i}
               x={p.x}
-              y={height + 20}
+              y={height + 40}
               fontSize="10"
               fill="#71717a"
               textAnchor="middle">
@@ -385,6 +392,10 @@ export default function ExerciseDetails() {
     return tiers.find((t) => user.streak >= t.d)?.c || '#a1a1aa';
   }, [user.streak, isCardio]);
 
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === 'dark';
+  const iconColor = isDark ? '#fafafa' : '#09090b';
+
   if (isLoading) {
     return (
       <View className="flex-1 items-center justify-center bg-background">
@@ -397,7 +408,7 @@ export default function ExerciseDetails() {
     <View className="flex-1 bg-background">
       <View className="z-10 flex-row items-center gap-4 border-b border-border bg-card px-4 pb-4 pt-12">
         <TouchableOpacity onPress={() => router.back()} className="rounded-full bg-muted/50 p-2">
-          <ChevronLeft size={24} className="text-foreground" />
+          <ChevronLeft size={24} color={iconColor} />
         </TouchableOpacity>
         <View className="flex-1">
           <Text className="text-xl font-bold text-foreground" numberOfLines={1}>
