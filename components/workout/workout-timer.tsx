@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View } from 'react-native';
+import { useColorScheme } from 'nativewind';
 import { Text } from '@/components/ui/text';
 import { Timer, Dumbbell, Moon } from 'lucide-react-native';
 
@@ -11,6 +12,12 @@ interface WorkoutTimerProps {
 
 export function WorkoutTimer({ startTime, status, isFinished }: WorkoutTimerProps) {
   const [elapsed, setElapsed] = useState(0);
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === 'dark';
+
+  const primaryColor = isDark ? '#fafafa' : '#18181b';
+  const mutedColor = isDark ? '#a1a1aa' : '#71717a';
+  const blueColor = '#3b82f6';
 
   useEffect(() => {
     let interval: any;
@@ -40,9 +47,9 @@ export function WorkoutTimer({ startTime, status, isFinished }: WorkoutTimerProp
   return (
     <View className="items-center">
       <View className="mb-1 flex-row items-center gap-1">
-        {status === 'training' && <Dumbbell size={12} className="text-primary" />}
-        {status === 'resting' && <Moon size={12} className="text-blue-400" />}
-        {status === 'idle' && <Timer size={12} className="text-muted-foreground" />}
+        {status === 'training' && <Dumbbell size={12} color={primaryColor} />}
+        {status === 'resting' && <Moon size={12} color={blueColor} />}
+        {status === 'idle' && <Timer size={12} color={mutedColor} />}
 
         <Text className="text-[10px] font-bold uppercase text-muted-foreground">
           {status === 'idle' ? 'Pronto' : status === 'training' ? 'Treinando' : 'Descanso'}
@@ -59,12 +66,8 @@ export function WorkoutTimer({ startTime, status, isFinished }: WorkoutTimerProp
         }`}>
         <Timer
           size={14}
-          className={
-            status === 'training'
-              ? 'text-primary'
-              : status === 'resting'
-                ? 'text-blue-500'
-                : 'text-muted-foreground'
+          color={
+            status === 'training' ? primaryColor : status === 'resting' ? blueColor : mutedColor
           }
         />
         <Text
