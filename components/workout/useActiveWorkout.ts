@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useStore } from '@/store/useStore';
@@ -13,6 +13,7 @@ export function useActiveWorkout(templateId?: string | string[]) {
   const [isFinished, setIsFinished] = useState(false);
   const [globalStatus, setGlobalStatus] = useState<'idle' | 'training' | 'resting'>('idle');
   const [isSelectorOpen, setIsSelectorOpen] = useState(false);
+  const handleFinishRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     if (!templateId) return;
@@ -77,59 +78,85 @@ export function useActiveWorkout(templateId?: string | string[]) {
     return null;
   };
 
-  const changeSetStatus = useCallback((exIndex: number, setIndex: number, newStatus: SetStatus) => {
-    setExercises((prev) => {
-      const newExs = prev.map((ex, i) => (i === exIndex ? { ...ex, sets: [...ex.sets] } : ex));
-      const set = { ...newExs[exIndex].sets[setIndex] };
+  const isLastSetOfLastExercise = useCallback(
+    (exIndex: number, setIndex: number, data: ActiveExercise[]) => {
+      const isLastExercise = exIndex === data.length - 1;
+      const isLastSet = setIndex === data[exIndex].sets.length - 1;
+      return isLastExercise && isLastSet;
+    },
+    []
+  );
 
-      const now = new Date().toISOString();
-      const isCardio = newExs[exIndex].group === 'Cardio';
+  const changeSetStatus = useCallback(
+    (exIndex: number, setIndex: number, newStatus: SetStatus) => {
+      setExercises((prev) => {
+        const newExs = prev.map((ex, i) => (i === exIndex ? { ...ex, sets: [...ex.sets] } : ex));
+        const set = { ...newExs[exIndex].sets[setIndex] };
 
-      if (newStatus === 'working') {
-        set.startedAt = now;
-        setGlobalStatus('training');
-      } else if (newStatus === 'completed') {
-        if (isCardio) {
-          const dist = parseFloat(set.distance?.replace(',', '.') || '0');
-          const dur = parseFloat(set.duration?.replace(',', '.') || '0');
-          if (dist <= 0) {
-            Alert.alert('Inválido', 'Informe a distância (KM).');
-            return prev;
+        const now = new Date().toISOString();
+        const isCardio = newExs[exIndex].group === 'Cardio';
+
+        if (newStatus === 'working') {
+          set.startedAt = now;
+          setGlobalStatus('training');
+        } else if (newStatus === 'completed') {
+          if (isCardio) {
+            const dist = parseFloat(set.distance?.replace(',', '.') || '0');
+            const dur = parseFloat(set.duration?.replace(',', '.') || '0');
+            if (dist <= 0) {
+              Alert.alert('Inválido', 'Informe a distância (KM).');
+              return prev;
+            }
+            if (dur <= 0) {
+              Alert.alert('Inválido', 'Informe o tempo (Min).');
+              return prev;
+            }
+          } else {
+            const w = parseFloat(set.weight.replace(',', '.') || '0');
+            const r = parseFloat(set.reps.replace(',', '.') || '0');
+            if (w <= 0) {
+              Alert.alert('Inválido', 'Informe o peso (KG).');
+              return prev;
+            }
+            if (r <= 0) {
+              Alert.alert('Inválido', 'Faça pelo menos 1 repetição.');
+              return prev;
+            }
           }
-          if (dur <= 0) {
-            Alert.alert('Inválido', 'Informe o tempo (Min).');
-            return prev;
+
+          set.completedAt = now;
+          if (set.startedAt) {
+            const start = new Date(set.startedAt).getTime();
+            set.durationSeconds = Math.floor((new Date(now).getTime() - start) / 1000);
           }
-        } else {
-          const w = parseFloat(set.weight.replace(',', '.') || '0');
-          const r = parseFloat(set.reps.replace(',', '.') || '0');
-          if (w <= 0) {
-            Alert.alert('Inválido', 'Informe o peso (KG).');
-            return prev;
+
+          if (isLastSetOfLastExercise(exIndex, setIndex, newExs)) {
+            set.status = newStatus;
+            newExs[exIndex].sets[setIndex] = set;
+
+            setTimeout(() => {
+              setExercises(newExs);
+              setGlobalStatus('idle');
+              handleFinishRef.current?.();
+            }, 100);
+
+            return newExs;
           }
-          if (r <= 0) {
-            Alert.alert('Inválido', 'Faça pelo menos 1 repetição.');
-            return prev;
-          }
+
+          setGlobalStatus('resting');
+        } else if (newStatus === 'idle') {
+          set.startedAt = undefined;
+          set.completedAt = undefined;
+          set.durationSeconds = undefined;
         }
 
-        set.completedAt = now;
-        if (set.startedAt) {
-          const start = new Date(set.startedAt).getTime();
-          set.durationSeconds = Math.floor((new Date(now).getTime() - start) / 1000);
-        }
-        setGlobalStatus('resting');
-      } else if (newStatus === 'idle') {
-        set.startedAt = undefined;
-        set.completedAt = undefined;
-        set.durationSeconds = undefined;
-      }
-
-      set.status = newStatus;
-      newExs[exIndex].sets[setIndex] = set;
-      return newExs;
-    });
-  }, []);
+        set.status = newStatus;
+        newExs[exIndex].sets[setIndex] = set;
+        return newExs;
+      });
+    },
+    [isLastSetOfLastExercise]
+  );
 
   const handleSetInteraction = useCallback(
     (exIndex: number, setIndex: number) => {
@@ -249,7 +276,7 @@ export function useActiveWorkout(templateId?: string | string[]) {
     ]);
   }, []);
 
-  const handleFinish = () => {
+  const handleFinish = useCallback(() => {
     const valid = exercises.some((ex) => ex.sets.some((s) => s.status === 'completed'));
     if (!valid) return Alert.alert('Inválido', 'Complete ao menos uma série.');
 
@@ -299,9 +326,13 @@ export function useActiveWorkout(templateId?: string | string[]) {
     Alert.alert('Parabéns! 🚀', `Tempo: ${formattedTime}\nXP: +${xp}`, [
       { text: 'Fechar', onPress: () => router.push('/(tabs)/history') },
     ]);
-  };
+  }, [exercises, startTime, addWorkout, router]);
 
-  const handleMainAction = () => {
+  useEffect(() => {
+    handleFinishRef.current = handleFinish;
+  }, [handleFinish]);
+
+  const handleMainAction = useCallback(() => {
     if (!startTime) {
       if (!exercises.length) return Alert.alert('Vazio', 'Adicione exercícios.');
       const now = new Date().toISOString();
@@ -314,7 +345,7 @@ export function useActiveWorkout(templateId?: string | string[]) {
     } else {
       handleFinish();
     }
-  };
+  }, [startTime, exercises.length, changeSetStatus, handleFinish]);
 
   return {
     exercises,
