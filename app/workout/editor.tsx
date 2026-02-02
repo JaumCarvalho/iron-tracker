@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
+import { useColorScheme } from 'nativewind';
 import { useStore } from '@/store/useStore';
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
@@ -21,6 +22,12 @@ import { TemplateExercise } from '@/types/template-exercise';
 export default function TemplateEditorScreen() {
   const params = useLocalSearchParams();
   const templateId = params.id as string | undefined;
+
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === 'dark';
+  const iconColor = isDark ? '#fafafa' : '#09090b';
+  const primaryColor = isDark ? '#fafafa' : '#18181b';
+  const mutedColor = isDark ? '#a1a1aa' : '#71717a';
 
   const { templates, saveTemplate } = useStore();
 
@@ -123,7 +130,7 @@ export default function TemplateEditorScreen() {
         <TouchableOpacity
           onPress={() => router.back()}
           className="h-10 w-10 items-center justify-center rounded-full bg-muted/50">
-          <ArrowLeft size={20} className="text-foreground" />
+          <ArrowLeft size={20} color={iconColor} />
         </TouchableOpacity>
         <Text className="text-lg font-bold text-foreground">
           {templateId ? 'Editar Rotina' : 'Nova Rotina'}
@@ -131,7 +138,7 @@ export default function TemplateEditorScreen() {
         <TouchableOpacity
           onPress={handleSave}
           className="h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-          <Save size={20} className="text-primary" />
+          <Save size={20} color={primaryColor} />
         </TouchableOpacity>
       </View>
 
@@ -161,7 +168,7 @@ export default function TemplateEditorScreen() {
             </Text>
 
             <Button variant="ghost" className="h-8" onPress={handleAddExercise}>
-              <Plus size={14} className="mr-1 text-primary" />
+              <Plus size={14} color={primaryColor} style={{ marginRight: 4 }} />
               <Text className="text-xs text-primary">Adicionar</Text>
             </Button>
           </View>
@@ -170,7 +177,7 @@ export default function TemplateEditorScreen() {
             {exercises.map((ex, index) => (
               <View key={index} className="rounded-xl border border-border bg-card p-3">
                 <View className="mb-2 flex-row items-center gap-2">
-                  <GripVertical size={20} className="text-muted-foreground" />
+                  <GripVertical size={20} color={mutedColor} />
 
                   <TouchableOpacity
                     className="h-10 flex-1 justify-center rounded-xl border border-input bg-muted/30 px-3"
@@ -181,7 +188,7 @@ export default function TemplateEditorScreen() {
                   </TouchableOpacity>
 
                   <TouchableOpacity onPress={() => removeExercise(index)} className="p-2">
-                    <Trash2 size={18} className="text-destructive" />
+                    <Trash2 size={18} color="#ef4444" />
                   </TouchableOpacity>
                 </View>
 
