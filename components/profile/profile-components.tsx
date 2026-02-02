@@ -133,12 +133,12 @@ export const StatsGrid = memo(
     return (
       <View className="mt-8 flex-row flex-wrap gap-3 px-6">
         <StatCard
-          icon={<Flame size={20} color={flameColor} />}
+          icon={<Flame size={20} color={accentColor} />}
           value={stats.streak}
           label="Ofensiva"
         />
         <StatCard
-          icon={<Trophy size={20} className="text-yellow-500" />}
+          icon={<Trophy size={20} color={accentColor} />}
           value={stats.xp}
           label="Total XP"
         />
@@ -148,7 +148,7 @@ export const StatsGrid = memo(
           label="Treinos"
         />
         <StatCard
-          icon={<Coffee size={20} className="text-blue-500" />}
+          icon={<Coffee size={20} color={accentColor} />}
           value={stats.restDays}
           label="Descansos"
         />
