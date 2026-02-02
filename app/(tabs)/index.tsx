@@ -5,7 +5,7 @@ import { UserHeader } from '@/components/features/user-header';
 import { MuscleDistribution } from '@/components/features/muscle-distribuition';
 import { CardioAnalysis } from '@/components/features/cardio-analysis';
 
-import { DevFloatingMenu } from '@/components/features/dev-floating-menu';
+// import { DevFloatingMenu } from '@/components/features/dev-floating-menu';
 import { useDashboard } from '@/components/dashboard/useDashboard';
 import {
   DateHeader,
@@ -76,7 +76,7 @@ export default function Dashboard() {
         <ChartsSection />
       </ScrollView>
 
-      <DevFloatingMenu />
+      {/* <DevFloatingMenu /> */}
     </View>
   );
 }

@@ -85,7 +85,7 @@ export default function ProfileScreen() {
             </View>
           </TouchableOpacity>
 
-          <TouchableOpacity
+          {/* <TouchableOpacity
             className="flex-row items-center gap-4 rounded-xl border border-border bg-card p-4 active:bg-muted"
             onPress={() =>
               Alert.alert('Em Breve', 'A exportação de arquivo estará disponível na v1.1')
@@ -101,7 +101,7 @@ export default function ProfileScreen() {
                 Gerar arquivo .json para download
               </Text>
             </View>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
         </View>
         <View className="mt-12 items-center gap-2">
           <ShieldCheck size={24} color={accentColor} style={{ opacity: 0.5 }} />
