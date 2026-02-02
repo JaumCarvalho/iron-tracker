@@ -460,12 +460,6 @@ Visualização em tempo real de eventos do sistema:
 
 ---
 
-## 📄 Licença
-
-Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
-
----
-
 <p align="center">
   <strong>Built with ❤️ using React Native, Expo, and NativeWind</strong>
 </p>
