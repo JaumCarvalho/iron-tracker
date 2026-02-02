@@ -67,11 +67,11 @@ export default function ProfileScreen() {
             onSelectColor={actions.handleSetAccentColor}
           />
 
-          <Text className="mt-2 text-sm font-bold uppercase text-muted-foreground">
+          {/* <Text className="mt-2 text-sm font-bold uppercase text-muted-foreground">
             Dados & Backup
-          </Text>
+          </Text> */}
 
-          <TouchableOpacity
+          {/* <TouchableOpacity
             onPress={actions.handleExportData}
             className="flex-row items-center gap-4 rounded-xl border border-border bg-card p-4 active:bg-muted">
             <View
@@ -83,7 +83,7 @@ export default function ProfileScreen() {
               <Text className="font-bold text-foreground">Copiar Dados (JSON)</Text>
               <Text className="text-xs text-muted-foreground">Salve seu backup manualmente</Text>
             </View>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
 
           {/* <TouchableOpacity
             className="flex-row items-center gap-4 rounded-xl border border-border bg-card p-4 active:bg-muted"
