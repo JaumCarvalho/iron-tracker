@@ -2,6 +2,7 @@ import React from 'react';
 import { View, ScrollView, KeyboardAvoidingView, Platform, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useColorScheme } from 'nativewind';
 import { ArrowLeft, Play, StopCircle, AlertTriangle, Plus } from 'lucide-react-native';
 
 import { Text } from '@/components/ui/text';
@@ -14,6 +15,11 @@ import { useActiveWorkout } from '@/components/workout/useActiveWorkout';
 export default function NewWorkoutScreen() {
   const router = useRouter();
   const { templateId } = useLocalSearchParams();
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === 'dark';
+
+  const iconColor = isDark ? '#fafafa' : '#09090b';
+  const primaryColor = isDark ? '#fafafa' : '#18181b';
 
   const {
     exercises,
@@ -37,7 +43,7 @@ export default function NewWorkoutScreen() {
         <TouchableOpacity
           onPress={() => router.back()}
           className="h-10 w-10 items-center justify-center rounded-full bg-muted/50">
-          <ArrowLeft size={20} className="text-foreground" />
+          <ArrowLeft size={20} color={iconColor} />
         </TouchableOpacity>
 
         <WorkoutTimer startTime={startTime} status={globalStatus} isFinished={isFinished} />
@@ -53,8 +59,14 @@ export default function NewWorkoutScreen() {
             </View>
           ) : (
             <View className="flex-row items-center gap-2">
-              <Play size={16} color="white" fill="white" />
-              <Text className="font-bold text-white">Iniciar</Text>
+              <Play
+                size={16}
+                color={isDark ? '#09090b' : 'white'}
+                fill={isDark ? '#09090b' : 'white'}
+              />
+              <Text className={`font-bold ${isDark ? 'text-background' : 'text-white'}`}>
+                Iniciar
+              </Text>
             </View>
           )}
         </Button>
@@ -68,7 +80,7 @@ export default function NewWorkoutScreen() {
           keyboardShouldPersistTaps="handled">
           {!startTime && exercises.length > 0 && (
             <View className="mb-4 flex-row items-center justify-center gap-3 rounded-lg border border-primary/20 bg-primary/5 p-4">
-              <AlertTriangle size={20} className="text-primary" />
+              <AlertTriangle size={20} color={primaryColor} />
               <Text className="text-sm font-bold text-primary">Aperte "Iniciar" para começar.</Text>
             </View>
           )}
@@ -90,7 +102,7 @@ export default function NewWorkoutScreen() {
             variant="outline"
             className="mb-8 mt-4 h-12 border-dashed"
             onPress={() => setIsSelectorOpen(true)}>
-            <Plus size={16} className="mr-2 text-foreground" />
+            <Plus size={16} color={iconColor} style={{ marginRight: 8 }} />
             <Text>Adicionar Exercício</Text>
           </Button>
         </ScrollView>

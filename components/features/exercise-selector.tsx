@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Modal, FlatList, TouchableOpacity, SafeAreaView } from 'react-native';
+import { useColorScheme } from 'nativewind';
 import { X, ChevronRight, ArrowLeft, Dumbbell, Plus } from 'lucide-react-native';
 import { Text } from '@/components/ui/text';
 import { Input } from '@/components/ui/input';
@@ -15,6 +16,12 @@ interface ExerciseSelectorProps {
 export function ExerciseSelector({ visible, onClose, onSelect }: ExerciseSelectorProps) {
   const [selectedGroup, setSelectedGroup] = useState<MuscleGroup | null>(null);
   const [customSearch, setCustomSearch] = useState('');
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === 'dark';
+
+  const iconColor = isDark ? '#fafafa' : '#09090b';
+  const primaryColor = isDark ? '#fafafa' : '#18181b';
+  const mutedColor = isDark ? '#a1a1aa' : '#71717a';
 
   const handleClose = () => {
     setSelectedGroup(null);
@@ -39,11 +46,11 @@ export function ExerciseSelector({ visible, onClose, onSelect }: ExerciseSelecto
       onPress={() => handleSelectGroup(item)}>
       <View className="flex-row items-center gap-3">
         <View className="rounded-lg bg-primary/10 p-2">
-          <Dumbbell size={20} className="text-primary" />
+          <Dumbbell size={20} color={primaryColor} />
         </View>
         <Text className="text-lg font-semibold">{item}</Text>
       </View>
-      <ChevronRight size={20} className="text-muted-foreground" />
+      <ChevronRight size={20} color={mutedColor} />
     </TouchableOpacity>
   );
 
@@ -69,7 +76,7 @@ export function ExerciseSelector({ visible, onClose, onSelect }: ExerciseSelecto
           <View className="flex-row items-center gap-2">
             {selectedGroup && (
               <Button variant="ghost" size="icon" onPress={() => setSelectedGroup(null)}>
-                <ArrowLeft size={24} className="text-foreground" />
+                <ArrowLeft size={24} color={iconColor} />
               </Button>
             )}
             <Text className="text-lg font-bold">
@@ -77,7 +84,7 @@ export function ExerciseSelector({ visible, onClose, onSelect }: ExerciseSelecto
             </Text>
           </View>
           <Button variant="ghost" size="icon" onPress={handleClose}>
-            <X size={24} className="text-muted-foreground" />
+            <X size={24} color={mutedColor} />
           </Button>
         </View>
 
@@ -110,7 +117,7 @@ export function ExerciseSelector({ visible, onClose, onSelect }: ExerciseSelecto
                     className="mt-2 flex-row items-center gap-3 py-4"
                     onPress={() => handleSelectExercise(customSearch)}>
                     <View className="rounded-full bg-primary/10 p-2">
-                      <Plus size={20} className="text-primary" />
+                      <Plus size={20} color={primaryColor} />
                     </View>
                     <View>
                       <Text className="font-bold text-primary">Criar "{customSearch}"</Text>

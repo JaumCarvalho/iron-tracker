@@ -1,15 +1,22 @@
 import React from 'react';
-import { View, ScrollView, TouchableOpacity, FlatList, Alert } from 'react-native';
+import { View, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, Stack } from 'expo-router';
+import { useColorScheme } from 'nativewind';
 import { useStore } from '@/store/useStore';
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Plus, Play, MoreVertical, Trash2, Edit3, Dumbbell } from 'lucide-react-native';
+import { ArrowLeft, Plus, Play, Trash2, Edit3, Dumbbell } from 'lucide-react-native';
 import dayjs from 'dayjs';
 
 export default function RoutinesScreen() {
   const { templates, deleteTemplate } = useStore();
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === 'dark';
+
+  const iconColor = isDark ? '#fafafa' : '#09090b';
+  const mutedColor = isDark ? '#a1a1aa' : '#71717a';
+  const primaryColor = isDark ? '#fafafa' : '#18181b';
 
   const handleStartEmpty = () => {
     router.push({ pathname: '/workout/new', params: { templateId: null } });
@@ -34,7 +41,7 @@ export default function RoutinesScreen() {
         <TouchableOpacity
           onPress={() => router.back()}
           className="h-10 w-10 items-center justify-center rounded-full bg-muted/50">
-          <ArrowLeft size={20} className="text-foreground" />
+          <ArrowLeft size={20} color={iconColor} />
         </TouchableOpacity>
         <Text className="text-lg font-bold text-foreground">Rotinas de Treino</Text>
         <View className="w-10" />
@@ -45,7 +52,7 @@ export default function RoutinesScreen() {
           onPress={handleStartEmpty}
           className="mb-8 flex-row items-center gap-4 rounded-xl border-2 border-dashed border-muted bg-muted/10 p-4 active:bg-muted/20">
           <View className="h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-            <Plus size={24} className="text-primary" />
+            <Plus size={24} color={primaryColor} />
           </View>
           <View className="flex-1">
             <Text className="text-lg font-bold text-foreground">Treino Livre</Text>
@@ -58,14 +65,14 @@ export default function RoutinesScreen() {
           <TouchableOpacity
             onPress={() => router.push('/workout/editor')}
             className="flex-row items-center gap-1">
-            <Plus size={14} className="text-primary" />
+            <Plus size={14} color={primaryColor} />
             <Text className="text-xs font-bold text-primary">Nova Ficha</Text>
           </TouchableOpacity>
         </View>
 
         {templates.length === 0 ? (
           <View className="items-center justify-center py-10 opacity-50">
-            <Dumbbell size={48} className="mb-4 text-muted-foreground" />
+            <Dumbbell size={48} color={mutedColor} style={{ marginBottom: 16 }} />
             <Text className="text-center text-muted-foreground">Nenhuma rotina criada.</Text>
           </View>
         ) : (
@@ -89,12 +96,12 @@ export default function RoutinesScreen() {
                         router.push({ pathname: '/workout/editor', params: { id: t.id } })
                       }
                       className="rounded-lg bg-muted p-2">
-                      <Edit3 size={16} className="text-foreground" />
+                      <Edit3 size={16} color={iconColor} />
                     </TouchableOpacity>
                     <TouchableOpacity
                       onPress={() => handleDelete(t.id, t.name)}
                       className="rounded-lg bg-red-500/10 p-2">
-                      <Trash2 size={16} className="text-red-500" />
+                      <Trash2 size={16} color="#ef4444" />
                     </TouchableOpacity>
                   </View>
                 </View>

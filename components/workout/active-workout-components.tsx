@@ -1,11 +1,17 @@
 import React, { memo } from 'react';
 import { View, TouchableOpacity } from 'react-native';
+import { useColorScheme } from 'nativewind';
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Check, Play, Hourglass, MoreVertical, Plus, Timer, MapPin } from 'lucide-react-native';
 
 export const SetRow = memo(({ set, index, onUpdate, onInteraction, onRemove, isCardio }: any) => {
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === 'dark';
+  const primaryColor = isDark ? '#fafafa' : '#18181b';
+  const mutedColor = isDark ? '#a1a1aa' : '#71717a';
+
   const getBorderColor = () => {
     if (set.status !== 'completed') return 'border-transparent';
     if (set.isExtra) return 'border-blue-500';
@@ -22,7 +28,7 @@ export const SetRow = memo(({ set, index, onUpdate, onInteraction, onRemove, isC
       case 'idle':
         return <Play size={16} color="#a1a1aa" fill="#a1a1aa" />;
       case 'working':
-        return <Hourglass size={16} className="text-primary" />;
+        return <Hourglass size={16} color={primaryColor} />;
       case 'completed':
         return <Check size={18} color="white" />;
     }
@@ -60,7 +66,11 @@ export const SetRow = memo(({ set, index, onUpdate, onInteraction, onRemove, isC
                 selectTextOnFocus
               />
               {!set.distance && (
-                <MapPin size={10} className="absolute right-2 text-muted-foreground/30" />
+                <MapPin
+                  size={10}
+                  color={mutedColor}
+                  style={{ position: 'absolute', right: 8, opacity: 0.3 }}
+                />
               )}
             </View>
 
@@ -74,7 +84,11 @@ export const SetRow = memo(({ set, index, onUpdate, onInteraction, onRemove, isC
                 selectTextOnFocus
               />
               {!set.duration && (
-                <Timer size={10} className="absolute right-2 text-muted-foreground/30" />
+                <Timer
+                  size={10}
+                  color={mutedColor}
+                  style={{ position: 'absolute', right: 8, opacity: 0.3 }}
+                />
               )}
             </View>
           </>
@@ -111,7 +125,7 @@ export const SetRow = memo(({ set, index, onUpdate, onInteraction, onRemove, isC
         <TouchableOpacity
           onPress={() => onRemove(index)}
           className="h-8 w-8 items-center justify-center opacity-50">
-          <MoreVertical size={16} className="text-muted-foreground" />
+          <MoreVertical size={16} color={mutedColor} />
         </TouchableOpacity>
       </View>
     </View>
@@ -128,6 +142,10 @@ export const ExerciseCard = memo(
     onAddSet,
     onRemoveSet,
   }: any) => {
+    const { colorScheme } = useColorScheme();
+    const isDark = colorScheme === 'dark';
+    const primaryColor = isDark ? '#fafafa' : '#18181b';
+    const mutedColor = isDark ? '#a1a1aa' : '#71717a';
     const isCardio = exercise.group === 'Cardio';
 
     return (
@@ -146,7 +164,7 @@ export const ExerciseCard = memo(
             <Text className="text-xs font-bold uppercase text-primary">{exercise.group}</Text>
           </View>
           <TouchableOpacity onPress={() => onRemoveExercise(exIndex)} className="p-2">
-            <MoreVertical size={20} className="text-muted-foreground" />
+            <MoreVertical size={20} color={mutedColor} />
           </TouchableOpacity>
         </View>
 
@@ -195,7 +213,7 @@ export const ExerciseCard = memo(
             variant="ghost"
             className="mt-2 h-8 border border-dashed border-border"
             onPress={() => onAddSet(exIndex)}>
-            <Plus size={14} className="mr-2 text-primary" />
+            <Plus size={14} color={primaryColor} style={{ marginRight: 8 }} />
             <Text className="text-xs text-primary">Adicionar Série Extra</Text>
           </Button>
         </View>
