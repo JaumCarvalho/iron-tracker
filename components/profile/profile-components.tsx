@@ -124,15 +124,21 @@ export const ProfileHeader = memo(
 
 export const StatsGrid = memo(
   ({ stats, accentColor = '#a1a1aa' }: { stats: any; accentColor?: string }) => {
+    const currentTier =
+      STREAK_TIERS.slice()
+        .reverse()
+        .find((t) => stats.streak >= t.days) || STREAK_TIERS[0];
+    const flameColor = currentTier.color;
+
     return (
       <View className="mt-8 flex-row flex-wrap gap-3 px-6">
         <StatCard
-          icon={<Flame size={20} color={accentColor} />}
+          icon={<Flame size={20} color={flameColor} />}
           value={stats.streak}
           label="Ofensiva"
         />
         <StatCard
-          icon={<Trophy size={20} color={accentColor} />}
+          icon={<Trophy size={20} className="text-yellow-500" />}
           value={stats.xp}
           label="Total XP"
         />
@@ -142,7 +148,7 @@ export const StatsGrid = memo(
           label="Treinos"
         />
         <StatCard
-          icon={<Coffee size={20} color={accentColor} />}
+          icon={<Coffee size={20} className="text-blue-500" />}
           value={stats.restDays}
           label="Descansos"
         />
